@@ -1,3 +1,30 @@
 <resources>
-    <string name="app_name">DevIntensive</string>
+    <string name="app_name">Прибытков Андрей</string>
+
+    <!-- Contacts page info -->
+    <string name="header_rating">Рейтинг</string>
+    <string name="header_code_strings">Написано строк кода</string>
+    <string name="header_projects">Проектов</string>
+
+    <string name="contacts_mobile">Мобильный</string>
+    <string name="contacts_email">E-mail</string>
+    <string name="contacts_vk">Профиль в VK</string>
+    <string name="contacts_repo">Репозиторий</string>
+    <string name="contacts_about">О себе</string>
+
+
+    <!-- Temporary volumes of contacts page info -->
+    <string name="header_rating_vol">5</string>
+    <string name="header_code_strings_vol">25000</string>
+    <string name="header_projects_vol">5</string>
+
+    <string name="contacts_mobile_vol">+7 (917) 971-11-11</string>
+    <string name="contacts_email_vol">makveb@yandex.ru</string>
+    <string name="contacts_vk_vol">vk.com/makeeb_mihail</string>
+    <string name="contacts_repo_vol">github.com/YuliaRada/School</string>
+    <string name="contacts_about_vol">Lorem ipsum dolor sit amet, consectitur adipiscing elit.
+        Nulla quam velit, vulputate eu pharetra nec, mattis ac neque. Duis vulputate commodo
+        lectus, ac blandit elit
+    </string>
+
 </resources>
