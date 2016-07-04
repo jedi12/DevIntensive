@@ -22,4 +22,7 @@
     <!-- Text sizes -->
     <dimen name="text_size_24">24sp</dimen>
     <dimen name="text_size_16">16sp</dimen>
+    <dimen name="text_size_normal_14">14sp</dimen>
+    <dimen name="profile_image_size">256dp</dimen>
+    <dimen name="fab_right_space">8dp</dimen>
 </resources>
