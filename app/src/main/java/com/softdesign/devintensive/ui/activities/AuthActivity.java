@@ -9,23 +9,21 @@ import android.widget.EditText;
 import com.softdesign.devintensive.R;
 import com.softdesign.devintensive.utils.ConstantManager;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+
 public class AuthActivity extends AppCompatActivity {
     private static final String TAG = ConstantManager.TAG_PREFIX + "AuthActivity";
 
-    EditText mAuthLogin;
-    EditText mAuthPass;
-    TextInputLayout mAuthLoginTil;
-    TextInputLayout mAuthPassTil;
-    Button mAuthLoginBtn;
+    @BindView(R.id.auth_login) EditText mAuthLogin;
+    @BindView(R.id.auth_pass) EditText mAuthPass;
+    @BindView(R.id.auth_login_til) TextInputLayout mAuthLoginTil;
+    @BindView(R.id.auth_pass_till) TextInputLayout mAuthPassTil;
+    @BindView(R.id.auth_login_btn) Button mAuthLoginBtn;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.auth);
-
-        mAuthLogin = (EditText) findViewById(R.id.auth_login);
-        mAuthPass = (EditText) findViewById(R.id.auth_pass);
-        mAuthLoginTil = (TextInputLayout) findViewById(R.id.auth_login_til);
-        mAuthPassTil = (TextInputLayout) findViewById(R.id.auth_pass_till);
-        mAuthLoginBtn = (Button) findViewById(R.id.auth_login_btn);
+        ButterKnife.bind(this);
     }
 }

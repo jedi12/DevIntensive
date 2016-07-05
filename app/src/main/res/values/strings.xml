@@ -42,5 +42,8 @@
     <string name="auth_email_temp_txt">Softdesign@mail.ru</string>
     <string name="auth_pass_txt">Пароль</string>
     <string name="auth_pass_forget_txt">Забыли пароль?</string>
+    <string name="error_correct_profile">Исправьте ошибки в профиле</string>
+    <string name="error_permission_need">Для корректной работы необходимо дать требуемые разрешения</string>
+    <string name="approve">Разрешить</string>
 
 </resources>

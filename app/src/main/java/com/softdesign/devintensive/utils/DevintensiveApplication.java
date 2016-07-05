@@ -6,7 +6,7 @@ import android.preference.PreferenceManager;
 
 public class DevintensiveApplication extends Application {
 
-    public static SharedPreferences sSharedPreferences;
+    private static SharedPreferences sSharedPreferences;
 
     @Override
     public void onCreate() {
