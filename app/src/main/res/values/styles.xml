@@ -9,6 +9,7 @@
 
         <!-- Remove EditText bottom line in disabled mode -->
         <item name="colorControlNormal">@color/white</item>
+        <item name="textColorError">@color/red_500</item>
     </style>
 
     <style name="AppTheme.NoActionBar">
@@ -62,11 +63,11 @@
     <!-- Contacts page inner LinearLayout style -->
     <style name="inner_line_layout_element">
         <item name="android:layout_width">0dp</item>
-        <item name="android:layout_height">@dimen/size_large_72</item>
+        <item name="android:layout_height">@dimen/size_large_80</item>
         <item name="android:layout_marginLeft">@dimen/spacing_medium_32</item>
         <item name="android:layout_marginRight">@dimen/spacing_normal_16</item>
         <item name="android:layout_weight">1</item>
-        <item name="android:gravity">bottom</item>
+        <item name="android:gravity">center_vertical</item>
         <item name="android:orientation">vertical</item>
     </style>
 
@@ -86,4 +87,9 @@
         <item name="android:fullDark">@android:color/transparent</item>
     </style>
 
+    <style name="error_appearance" parent="@android:style/TextAppearance">
+        <item name="android:textColor">@color/red_500</item>
+        <item name="android:textSize">@dimen/text_size_small_12</item>
+        <item name="android:fontFamily">sans-serif-condensed</item>
+    </style>
 </resources>
