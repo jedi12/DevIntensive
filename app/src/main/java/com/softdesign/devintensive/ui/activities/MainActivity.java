@@ -37,7 +37,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
-import android.widget.TextView;
 
 import com.softdesign.devintensive.R;
 import com.softdesign.devintensive.data.managers.DataManager;
@@ -45,6 +44,17 @@ import com.softdesign.devintensive.ext.MaskTextWatcher;
 import com.softdesign.devintensive.utils.ConstantManager;
 import com.softdesign.devintensive.utils.ImageHelper;
 import com.squareup.picasso.Picasso;
+import com.vk.sdk.VKAccessToken;
+import com.vk.sdk.VKCallback;
+import com.vk.sdk.VKSdk;
+import com.vk.sdk.api.VKApi;
+import com.vk.sdk.api.VKApiConst;
+import com.vk.sdk.api.VKError;
+import com.vk.sdk.api.VKParameters;
+import com.vk.sdk.api.VKRequest;
+import com.vk.sdk.api.VKResponse;
+import com.vk.sdk.api.model.VKApiUserFull;
+import com.vk.sdk.api.model.VKList;
 
 import java.io.File;
 import java.io.IOException;
@@ -287,6 +297,10 @@ public class MainActivity extends BaseActivity {
                     startActivity(authIntent);
                 }
 
+                if (item.getItemId() == R.id.login_vk_menu) {
+                    VKSdk.login(MainActivity.this, null);
+                }
+
                 return false;
             }
         });
@@ -309,6 +323,22 @@ public class MainActivity extends BaseActivity {
 
                     insertProfileImage(mSelectedImage);
                 }
+        }
+
+        if (!VKSdk.onActivityResult(requestCode, resultCode, data,
+                new VKCallback<VKAccessToken>() {
+                    @Override
+                    public void onResult(VKAccessToken res) {
+                        loadVkUserInfo();
+                    }
+
+                    @Override
+                    public void onError(VKError error) {
+                        // Произошла ошибка авторизации (например, пользователь запретил авторизацию)
+                        showSnackbar("Авторизация не удалась: " + error.toString());
+                    }
+                })) {
+            super.onActivityResult(requestCode, resultCode, data);
         }
     }
 
@@ -360,7 +390,7 @@ public class MainActivity extends BaseActivity {
         mDataManager.getPreferencesManager().saveUserProfileData(userData);
     }
 
-    private void loadPhotoFromGallerey() {
+    private void loadPhotoFromGallery() {
         Intent takeGalleryIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
 
         takeGalleryIntent.setType("image/*");
@@ -439,7 +469,7 @@ public class MainActivity extends BaseActivity {
                     public void onClick(DialogInterface dialog, int choiceItem) {
                         switch (choiceItem) {
                             case 0:
-                                loadPhotoFromGallerey();
+                                loadPhotoFromGallery();
                                 //showSnackbar("Галлерея");
                                 break;
 
@@ -505,5 +535,45 @@ public class MainActivity extends BaseActivity {
         editText.setSelection(editText.getText().length());
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.showSoftInput(editText, 0);
+    }
+
+    private void loadVkUserInfo() {
+        // Prepare request
+        VKRequest request = VKApi.users().get(VKParameters.from(VKApiConst.FIELDS, "contacts, screen_name, site, about, photo_max_orig"));
+
+        // Send request
+        request.executeWithListener(new VKRequest.VKRequestListener() {
+            @Override
+            public void onComplete(VKResponse response) {
+
+                // Processing response
+                VKList vkList = (VKList) response.parsedModel;
+                VKApiUserFull vkApiUserFull = (VKApiUserFull) vkList.get(0);
+
+                String userFullName = vkApiUserFull.toString();
+                String userPhone = vkApiUserFull.fields.optString("mobile_phone", "");
+                String userVkUrl = "vk.com/" + vkApiUserFull.fields.optString("screen_name", "");
+                String userSite = vkApiUserFull.fields.optString("site", "");
+                String userAbout = vkApiUserFull.fields.optString("about", "");
+                String userPhotoUrl = vkApiUserFull.fields.optString("photo_max_orig", "");
+
+                mCollapsingToolbar.setTitle(userFullName);
+                mUserPhone.setText(userPhone);
+                //mUserMail.setText("");
+                mUserVk.setText(userVkUrl);
+                mUserGit.setText(userSite);
+                mUserBio.setText(userAbout);
+
+                insertProfileImage(Uri.parse(userPhotoUrl));
+            }
+            @Override
+            public void onError(VKError error) {
+                showSnackbar("Данные не получены: " + error.toString());
+            }
+            @Override
+            public void attemptFailed(VKRequest request, int attemptNumber, int totalAttempts) {
+                //I don't really believe in progress
+            }
+        });
     }
 }

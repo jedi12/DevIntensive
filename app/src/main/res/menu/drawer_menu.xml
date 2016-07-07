@@ -16,5 +16,10 @@
             android:id="@+id/login_menu"
             android:icon="@drawable/ic_visibility_black_24dp"
             android:title="@string/menu_login"/>
+
+        <item
+            android:id="@+id/login_vk_menu"
+            android:icon="@drawable/ic_vk"
+            android:title="@string/menu_login_vk"/>
     </group>
 </menu>

@@ -1,4 +1,6 @@
 <resources>
+    <integer name="com_vk_sdk_AppId">5537653</integer>
+
     <string name="app_name">Прибытков Андрей</string>
 
     <!-- Contacts page info -->
@@ -45,5 +47,6 @@
     <string name="error_correct_profile">Исправьте ошибки в профиле</string>
     <string name="error_permission_need">Для корректной работы необходимо дать требуемые разрешения</string>
     <string name="approve">Разрешить</string>
+    <string name="menu_login_vk">Войти через VK</string>
 
 </resources>

@@ -3,10 +3,16 @@
           package="com.softdesign.devintensive">
 
     <uses-permission android:name="android.permission.CAMERA"/>
-    <uses-feature android:name="android.hardware.camera2" android:required="false"/>
-    <uses-feature android:name="android.hardware.camera2.autofocus" android:required="false"/>
+
+    <uses-feature
+        android:name="android.hardware.camera2"
+        android:required="false"/>
+    <uses-feature
+        android:name="android.hardware.camera2.autofocus"
+        android:required="false"/>
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
         android:name=".utils.DevintensiveApplication"
@@ -24,6 +30,11 @@
         </activity>
 
         <activity android:name=".ui.activities.AuthActivity"/>
+
+        <activity
+            android:name="com.vk.sdk.VKServiceActivity"
+            android:label="ServiceActivity"
+            android:theme="@style/VK.Transparent"/>
     </application>
 
 </manifest>
