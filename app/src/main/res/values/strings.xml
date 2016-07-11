@@ -1,7 +1,7 @@
 <resources>
     <integer name="com_vk_sdk_AppId">5537653</integer>
 
-    <string name="app_name">Прибытков Андрей</string>
+    <string name="app_name">DevIntensiveApp</string>
 
     <!-- Contacts page info -->
     <string name="header_rating">Рейтинг</string>
@@ -40,9 +40,8 @@
     <string name="drawer_header_user_name">Прибытков Андрей</string>
     <string name="drawer_header_user_email">myMail@mail.ru</string>
     <string name="auth_enter_txt">ВОЙТИ</string>
-    <string name="auth_email_txt">E-mail</string>
-    <string name="auth_email_temp_txt">Softdesign@mail.ru</string>
-    <string name="auth_pass_txt">Пароль</string>
+    <string name="auth_email_txt">Введите e-mail</string>
+    <string name="auth_pass_txt">Введите пароль</string>
     <string name="auth_pass_forget_txt">Забыли пароль?</string>
     <string name="error_correct_profile">Исправьте ошибки в профиле</string>
     <string name="error_permission_need">Для корректной работы необходимо дать требуемые разрешения</string>

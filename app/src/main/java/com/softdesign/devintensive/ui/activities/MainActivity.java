@@ -37,12 +37,13 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import com.softdesign.devintensive.R;
 import com.softdesign.devintensive.data.managers.DataManager;
 import com.softdesign.devintensive.ext.MaskTextWatcher;
 import com.softdesign.devintensive.utils.ConstantManager;
-import com.softdesign.devintensive.utils.ImageHelper;
+import com.softdesign.devintensive.utils.RoundedImageTransformation;
 import com.squareup.picasso.Picasso;
 import com.vk.sdk.VKAccessToken;
 import com.vk.sdk.VKCallback;
@@ -78,6 +79,10 @@ public class MainActivity extends BaseActivity {
     private File mPhotoFile;
     private Uri mSelectedImage;
 
+    private ImageView drawerUsrAvatar;
+    private TextView drawerUserFuulName;
+    private TextView drawerUserEmail;
+
     @BindView(R.id.main_coordinator_container) CoordinatorLayout mCoordinatorLayout;
     @BindView(R.id.toolbar) Toolbar mToolbar;
     @BindView(R.id.navigation_drawer) DrawerLayout mNavigationDrawer;
@@ -96,6 +101,9 @@ public class MainActivity extends BaseActivity {
 
     @BindViews({R.id.phone_edit, R.id.email_edit, R.id.vk_profile_edit, R.id.repo_edit, R.id.about_edit})
     List<EditText> mUserFields;
+
+    @BindViews({R.id.user_info_rait_txt, R.id.user_info_code_lines_txt, R.id.user_info_projects_txt})
+    List<TextView> mUserValueViews;
 
     @BindView(R.id.phone_edit_layout) TextInputLayout mUserPhoneLayout;
     @BindView(R.id.email_edit_layout) TextInputLayout mUserMailLayout;
@@ -125,15 +133,10 @@ public class MainActivity extends BaseActivity {
         mUserVk.addTextChangedListener(new MaskTextWatcher(mUserVkLayout, "vk.com/XXX", MaskTextWatcher.URL_MASK));
         mUserGit.addTextChangedListener(new MaskTextWatcher(mUserGitLayout, "github.com/XXX", MaskTextWatcher.URL_MASK));
 
-        ImageView imageView = (ImageView) mNavigationView.getHeaderView(0).findViewById(R.id.drawer_avatar);
-        Bitmap bitmap = ImageHelper.getRoundedBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.avatar));
-        bitmap = ImageHelper.getRoundedBitmap(bitmap);
-        imageView.setImageBitmap(bitmap);
-
         setupToolBar();
         setupDrawer();
-        loadUserInfoValue();
-        insertProfileImage(mDataManager.getPreferencesManager().loadUserPhoto());
+        initUserFields();
+        initUserInfoValue();
 
         if (savedInstanceState == null) {
 
@@ -158,7 +161,7 @@ public class MainActivity extends BaseActivity {
     protected void onPause() {
         super.onPause();
         Log.d(TAG, "onPause");
-        saveUserInfoValue();
+        saveUserFields();
     }
 
     @Override
@@ -275,8 +278,11 @@ public class MainActivity extends BaseActivity {
     private void setupToolBar() {
         setSupportActionBar(mToolbar);
         ActionBar actionBar = getSupportActionBar();
-
         mAppBarParams = (AppBarLayout.LayoutParams) mCollapsingToolbar.getLayoutParams();
+
+        mCollapsingToolbar.setTitle(mDataManager.getPreferencesManager().getUserFullName());
+        insertProfileImage(mDataManager.getPreferencesManager().loadUserPhoto());
+
         if (actionBar != null) {
             actionBar.setHomeAsUpIndicator(R.drawable.ic_menu_black_24dp);
             actionBar.setDisplayHomeAsUpEnabled(true);
@@ -284,8 +290,17 @@ public class MainActivity extends BaseActivity {
     }
 
     private void setupDrawer() {
-        NavigationView navigationView = (NavigationView) findViewById(R.id.navigation_view);
-        navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
+
+        drawerUsrAvatar = (ImageView) mNavigationView.getHeaderView(0).findViewById(R.id.drawer_avatar_img);
+        drawerUserFuulName = (TextView) mNavigationView.getHeaderView(0).findViewById(R.id.drawer_user_name_txt);
+        drawerUserEmail = (TextView) mNavigationView.getHeaderView(0).findViewById(R.id.drawer_user_email_txt);
+
+        drawerUserFuulName.setText(mDataManager.getPreferencesManager().getUserFullName());
+        drawerUserEmail.setText(mDataManager.getPreferencesManager().getUserEmail());
+
+        insertDrawerAvatar(mDataManager.getPreferencesManager().loadUserAvatar());
+
+        mNavigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(MenuItem item) {
                 showSnackbar(item.getTitle().toString());
@@ -312,7 +327,7 @@ public class MainActivity extends BaseActivity {
             case ConstantManager.REQUEST_GALLERY_PICTURE:
                 if (resultCode == RESULT_OK && data != null) {
                     mSelectedImage = data.getData();
-
+                    mDataManager.getPreferencesManager().saveUserPhoto(mSelectedImage);
                     insertProfileImage(mSelectedImage);
                 }
                 break;
@@ -320,7 +335,7 @@ public class MainActivity extends BaseActivity {
             case ConstantManager.REQUEST_CAMERA_PICTURE:
                 if(resultCode == RESULT_OK && mPhotoFile != null) {
                     mSelectedImage = Uri.fromFile(mPhotoFile);
-
+                    mDataManager.getPreferencesManager().saveUserPhoto(mSelectedImage);
                     insertProfileImage(mSelectedImage);
                 }
         }
@@ -369,25 +384,32 @@ public class MainActivity extends BaseActivity {
             unlockToolbar();
             mCollapsingToolbar.setExpandedTitleColor(getResources().getColor(R.color.white));
 
-            saveUserInfoValue();
+            saveUserFields();
 
             mCurrentEditMode = 0;
         }
     }
 
-    private void loadUserInfoValue() {
+    private void initUserFields() {
         List<String> userData = mDataManager.getPreferencesManager().loadUserProfileData();
         for (int i = 0; i < userData.size(); i++) {
             mUserFields.get(i).setText(userData.get(i));
         }
     }
 
-    private void saveUserInfoValue() {
+    private void saveUserFields() {
         List<String> userData = new ArrayList<>();
         for (EditText userFieldView : mUserFields) {
             userData.add(userFieldView.getText().toString());
         }
         mDataManager.getPreferencesManager().saveUserProfileData(userData);
+    }
+
+    private void initUserInfoValue() {
+        List<String> userData = mDataManager.getPreferencesManager().loadUserProfileValues();
+        for (int i = 0; i < userData.size(); i++) {
+            mUserValueViews.get(i).setText(userData.get(i));
+        }
     }
 
     private void loadPhotoFromGallery() {
@@ -520,7 +542,17 @@ public class MainActivity extends BaseActivity {
                 .centerCrop()
                 .placeholder(R.drawable.user_bg)
                 .into(mProfileImage);
-        mDataManager.getPreferencesManager().saveUserPhoto(selectedImage);
+    }
+
+    private void insertDrawerAvatar(Uri selectedImage) {
+        Picasso.with(this)
+                .load(selectedImage)
+                .resize(getResources().getDimensionPixelSize(R.dimen.drawer_header_avatar_size),
+                        getResources().getDimensionPixelSize(R.dimen.drawer_header_avatar_size))
+                .centerCrop()
+                .transform(new RoundedImageTransformation())
+                .placeholder(R.drawable.avatar_bg)
+                .into(drawerUsrAvatar);
     }
 
     private void openApplicationSettings() {
