@@ -9,6 +9,7 @@
 
         <!-- Remove EditText bottom line in disabled mode -->
         <item name="colorControlNormal">@color/white</item>
+        <item name="android:colorButtonNormal">@color/red_500</item>
 
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:statusBarColor">@color/color_accent</item>
