@@ -7,8 +7,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Environment;
@@ -41,8 +39,11 @@ import android.widget.TextView;
 
 import com.softdesign.devintensive.R;
 import com.softdesign.devintensive.data.managers.DataManager;
+import com.softdesign.devintensive.data.network.res.UserModelRes;
 import com.softdesign.devintensive.ext.MaskTextWatcher;
 import com.softdesign.devintensive.utils.ConstantManager;
+import com.softdesign.devintensive.utils.FileHelper;
+import com.softdesign.devintensive.utils.NetworkStatusChecker;
 import com.softdesign.devintensive.utils.RoundedImageTransformation;
 import com.squareup.picasso.Picasso;
 import com.vk.sdk.VKAccessToken;
@@ -68,6 +69,13 @@ import butterknife.BindView;
 import butterknife.BindViews;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MainActivity extends BaseActivity {
 
@@ -78,6 +86,7 @@ public class MainActivity extends BaseActivity {
     private AppBarLayout.LayoutParams mAppBarParams;
     private File mPhotoFile;
     private Uri mSelectedImage;
+    private Uri mCurrentProfileImage;
 
     private ImageView drawerUsrAvatar;
     private TextView drawerUserFuulName;
@@ -364,6 +373,8 @@ public class MainActivity extends BaseActivity {
      */
     private void changeEditMode(int mode) {
         if (mode == 1) {
+            mCurrentProfileImage = mDataManager.getPreferencesManager().loadUserPhoto();
+
             mFab.setImageResource(R.drawable.ic_done_black_24dp);
 
             ButterKnife.apply(mUserFields, EDIT_TEXT_ENABLED, true);
@@ -386,8 +397,45 @@ public class MainActivity extends BaseActivity {
 
             saveUserFields();
 
+            if (mSelectedImage != null && !mSelectedImage.equals(mCurrentProfileImage)) {
+                sendPhotoToServer();
+                mCurrentProfileImage = mSelectedImage;
+            }
+
             mCurrentEditMode = 0;
         }
+    }
+
+    private void sendPhotoToServer() {
+
+        RequestBody description = RequestBody.create(MediaType.parse("multipart/form-data"), "description");
+
+        File file = new File(FileHelper.getRealPathFromUri(this, mSelectedImage));
+        RequestBody requestFile = RequestBody.create(MediaType.parse("multipart/form-data"), file);
+        MultipartBody.Part body = MultipartBody.Part.createFormData("photo", file.getName(), requestFile);
+
+        if (NetworkStatusChecker.isNetworkAvailable(this)) {
+            Call<ResponseBody> call = mDataManager.uploadPhoto(description, body);
+            call.enqueue(new Callback<ResponseBody>() {
+                @Override
+                public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                    if (response.code() == 200) {
+                        showSnackbar("Фото сохранено на сайте");
+                    } else {
+                        showSnackbar("Фото сохранить на сайте не удалось");
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ResponseBody> call, Throwable t) {
+                    showSnackbar("Ошибка: " + t.getMessage());
+                }
+            });
+        } else {
+            showSnackbar("Сеть на данный момент недоступна, попробуйте позже");
+        }
+
+        return;
     }
 
     private void initUserFields() {

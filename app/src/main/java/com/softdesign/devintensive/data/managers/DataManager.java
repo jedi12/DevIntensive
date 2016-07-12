@@ -5,6 +5,9 @@ import com.softdesign.devintensive.data.network.ServiceGenerator;
 import com.softdesign.devintensive.data.network.req.UserLoginReq;
 import com.softdesign.devintensive.data.network.res.UserModelRes;
 
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 
 public class DataManager {
@@ -34,6 +37,10 @@ public class DataManager {
 
     public Call<UserModelRes> loginUser(UserLoginReq userLoginReq) {
         return mRestService.loginUser(userLoginReq);
+    }
+
+    public Call<ResponseBody> uploadPhoto(RequestBody description, MultipartBody.Part file) {
+        return mRestService.uploadPhoto(description, file);
     }
     // endregion
 
