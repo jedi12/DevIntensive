@@ -4,21 +4,28 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 
-public class FileHelper {
-    public static String getRealPathFromUri(Context context, Uri contentUri) {
+import java.io.File;
+
+public class MediaStoreFileHelper {
+    public static File getFileByUri(@NonNull Context context, @NonNull Uri contentUri) {
         Cursor cursor = null;
 
         if (contentUri.getScheme().equals("file")) {
-            return contentUri.getPath();
+            return new File(contentUri.getPath());
         }
 
         try {
             String[] mediaData = {MediaStore.Images.Media.DATA};
             cursor = context.getContentResolver().query(contentUri,  mediaData, null, null, null);
-            int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+            int column = cursor.getColumnIndex(MediaStore.Images.Media.DATA);
             cursor.moveToFirst();
-            return cursor.getString(column_index);
+
+            return new File(cursor.getString(column));
+
+        } catch (Exception ex) {
+            return null;
         } finally {
             if (cursor != null) {
                 cursor.close();

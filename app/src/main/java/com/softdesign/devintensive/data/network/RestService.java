@@ -11,6 +11,7 @@ import retrofit2.http.Body;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.Part;
+import retrofit2.http.Path;
 
 public interface RestService {
 
@@ -18,6 +19,6 @@ public interface RestService {
     Call<UserModelRes> loginUser(@Body UserLoginReq req);
 
     @Multipart
-    @POST("profile/edit")
-    Call<ResponseBody> uploadPhoto(@Part("description") RequestBody description, @Part MultipartBody.Part file);
+    @POST("user/{userId}/publicValues/profilePhoto")
+    Call<ResponseBody> uploadPhoto(@Path("userId") String userId, @Part MultipartBody.Part file);
 }
