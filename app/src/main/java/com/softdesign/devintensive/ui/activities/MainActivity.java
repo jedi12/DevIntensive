@@ -39,10 +39,9 @@ import android.widget.TextView;
 
 import com.softdesign.devintensive.R;
 import com.softdesign.devintensive.data.managers.DataManager;
-import com.softdesign.devintensive.data.network.res.UserModelRes;
 import com.softdesign.devintensive.ext.MaskTextWatcher;
 import com.softdesign.devintensive.utils.ConstantManager;
-import com.softdesign.devintensive.utils.FileHelper;
+import com.softdesign.devintensive.utils.MediaStoreFileHelper;
 import com.softdesign.devintensive.utils.NetworkStatusChecker;
 import com.softdesign.devintensive.utils.RoundedImageTransformation;
 import com.squareup.picasso.Picasso;
@@ -170,7 +169,6 @@ public class MainActivity extends BaseActivity {
     protected void onPause() {
         super.onPause();
         Log.d(TAG, "onPause");
-        saveUserFields();
     }
 
     @Override
@@ -318,6 +316,7 @@ public class MainActivity extends BaseActivity {
 
                 if (item.getItemId() == R.id.login_menu) {
                     Intent authIntent = new Intent(MainActivity.this, AuthActivity.class);
+                    finish();
                     startActivity(authIntent);
                 }
 
@@ -407,15 +406,14 @@ public class MainActivity extends BaseActivity {
     }
 
     private void sendPhotoToServer() {
+        String userId = mDataManager.getPreferencesManager().getUserId();
 
-        RequestBody description = RequestBody.create(MediaType.parse("multipart/form-data"), "description");
-
-        File file = new File(FileHelper.getRealPathFromUri(this, mSelectedImage));
+        File file = MediaStoreFileHelper.getFileByUri(this, mSelectedImage);
         RequestBody requestFile = RequestBody.create(MediaType.parse("multipart/form-data"), file);
         MultipartBody.Part body = MultipartBody.Part.createFormData("photo", file.getName(), requestFile);
 
         if (NetworkStatusChecker.isNetworkAvailable(this)) {
-            Call<ResponseBody> call = mDataManager.uploadPhoto(description, body);
+            Call<ResponseBody> call = mDataManager.uploadPhoto(userId, body);
             call.enqueue(new Callback<ResponseBody>() {
                 @Override
                 public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
@@ -630,25 +628,24 @@ public class MainActivity extends BaseActivity {
                 VKList vkList = (VKList) response.parsedModel;
                 VKApiUserFull vkApiUserFull = (VKApiUserFull) vkList.get(0);
 
-                String userFullName = vkApiUserFull.toString();
-                String userPhone = vkApiUserFull.fields.optString("mobile_phone", "");
-                String userVkUrl = "vk.com/" + vkApiUserFull.fields.optString("screen_name", "");
-                String userSite = vkApiUserFull.fields.optString("site", "");
-                String userAbout = vkApiUserFull.fields.optString("about", "");
-                String userPhotoUrl = vkApiUserFull.fields.optString("photo_max_orig", "");
+                List<String> userField = new ArrayList<>();
+                userField.add(vkApiUserFull.fields.optString("mobile_phone", ""));
+                userField.add("");
+                userField.add("vk.com/" + vkApiUserFull.fields.optString("screen_name", ""));
+                userField.add(vkApiUserFull.fields.optString("site", ""));
+                userField.add(vkApiUserFull.fields.optString("about", ""));
 
-                mCollapsingToolbar.setTitle(userFullName);
-                mUserPhone.setText(userPhone);
-                //mUserMail.setText("");
-                mUserVk.setText(userVkUrl);
-                mUserGit.setText(userSite);
-                mUserBio.setText(userAbout);
+                mDataManager.getPreferencesManager().saveUserPhoto(Uri.parse(vkApiUserFull.fields.optString("photo_max_orig", "")));
+                mDataManager.getPreferencesManager().saveUserFullName(vkApiUserFull.toString());
+                mDataManager.getPreferencesManager().saveUserProfileData(userField);
 
-                insertProfileImage(Uri.parse(userPhotoUrl));
+                finish();
+                startActivity(getIntent());
             }
             @Override
             public void onError(VKError error) {
-                showSnackbar("Данные не получены: " + error.toString());
+                showSnackbar("Данные не получены: " + error.toString()
+);
             }
             @Override
             public void attemptFailed(VKRequest request, int attemptNumber, int totalAttempts) {

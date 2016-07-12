@@ -95,6 +95,7 @@ public class AuthActivity extends BaseActivity {
         saveUserData(userModel);
 
         Intent loginIntent = new Intent(this, MainActivity.class);
+        finish();
         startActivity(loginIntent);
     }
 

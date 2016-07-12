@@ -39,8 +39,8 @@ public class DataManager {
         return mRestService.loginUser(userLoginReq);
     }
 
-    public Call<ResponseBody> uploadPhoto(RequestBody description, MultipartBody.Part file) {
-        return mRestService.uploadPhoto(description, file);
+    public Call<ResponseBody> uploadPhoto(String userId, MultipartBody.Part file) {
+        return mRestService.uploadPhoto(userId, file);
     }
     // endregion
 
