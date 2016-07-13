@@ -7,8 +7,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Environment;
@@ -37,12 +35,15 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import com.softdesign.devintensive.R;
 import com.softdesign.devintensive.data.managers.DataManager;
 import com.softdesign.devintensive.ext.MaskTextWatcher;
 import com.softdesign.devintensive.utils.ConstantManager;
-import com.softdesign.devintensive.utils.ImageHelper;
+import com.softdesign.devintensive.utils.MediaStoreFileHelper;
+import com.softdesign.devintensive.utils.NetworkStatusChecker;
+import com.softdesign.devintensive.utils.RoundedImageTransformation;
 import com.squareup.picasso.Picasso;
 import com.vk.sdk.VKAccessToken;
 import com.vk.sdk.VKCallback;
@@ -67,6 +68,13 @@ import butterknife.BindView;
 import butterknife.BindViews;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MainActivity extends BaseActivity {
 
@@ -77,6 +85,11 @@ public class MainActivity extends BaseActivity {
     private AppBarLayout.LayoutParams mAppBarParams;
     private File mPhotoFile;
     private Uri mSelectedImage;
+    private Uri mCurrentProfileImage;
+
+    private ImageView drawerUsrAvatar;
+    private TextView drawerUserFuulName;
+    private TextView drawerUserEmail;
 
     @BindView(R.id.main_coordinator_container) CoordinatorLayout mCoordinatorLayout;
     @BindView(R.id.toolbar) Toolbar mToolbar;
@@ -96,6 +109,9 @@ public class MainActivity extends BaseActivity {
 
     @BindViews({R.id.phone_edit, R.id.email_edit, R.id.vk_profile_edit, R.id.repo_edit, R.id.about_edit})
     List<EditText> mUserFields;
+
+    @BindViews({R.id.user_info_rait_txt, R.id.user_info_code_lines_txt, R.id.user_info_projects_txt})
+    List<TextView> mUserValueViews;
 
     @BindView(R.id.phone_edit_layout) TextInputLayout mUserPhoneLayout;
     @BindView(R.id.email_edit_layout) TextInputLayout mUserMailLayout;
@@ -125,15 +141,10 @@ public class MainActivity extends BaseActivity {
         mUserVk.addTextChangedListener(new MaskTextWatcher(mUserVkLayout, "vk.com/XXX", MaskTextWatcher.URL_MASK));
         mUserGit.addTextChangedListener(new MaskTextWatcher(mUserGitLayout, "github.com/XXX", MaskTextWatcher.URL_MASK));
 
-        ImageView imageView = (ImageView) mNavigationView.getHeaderView(0).findViewById(R.id.drawer_avatar);
-        Bitmap bitmap = ImageHelper.getRoundedBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.avatar));
-        bitmap = ImageHelper.getRoundedBitmap(bitmap);
-        imageView.setImageBitmap(bitmap);
-
         setupToolBar();
         setupDrawer();
-        loadUserInfoValue();
-        insertProfileImage(mDataManager.getPreferencesManager().loadUserPhoto());
+        initUserFields();
+        initUserInfoValue();
 
         if (savedInstanceState == null) {
 
@@ -158,7 +169,6 @@ public class MainActivity extends BaseActivity {
     protected void onPause() {
         super.onPause();
         Log.d(TAG, "onPause");
-        saveUserInfoValue();
     }
 
     @Override
@@ -275,8 +285,11 @@ public class MainActivity extends BaseActivity {
     private void setupToolBar() {
         setSupportActionBar(mToolbar);
         ActionBar actionBar = getSupportActionBar();
-
         mAppBarParams = (AppBarLayout.LayoutParams) mCollapsingToolbar.getLayoutParams();
+
+        mCollapsingToolbar.setTitle(mDataManager.getPreferencesManager().getUserFullName());
+        insertProfileImage(mDataManager.getPreferencesManager().loadUserPhoto());
+
         if (actionBar != null) {
             actionBar.setHomeAsUpIndicator(R.drawable.ic_menu_black_24dp);
             actionBar.setDisplayHomeAsUpEnabled(true);
@@ -284,8 +297,17 @@ public class MainActivity extends BaseActivity {
     }
 
     private void setupDrawer() {
-        NavigationView navigationView = (NavigationView) findViewById(R.id.navigation_view);
-        navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
+
+        drawerUsrAvatar = (ImageView) mNavigationView.getHeaderView(0).findViewById(R.id.drawer_avatar_img);
+        drawerUserFuulName = (TextView) mNavigationView.getHeaderView(0).findViewById(R.id.drawer_user_name_txt);
+        drawerUserEmail = (TextView) mNavigationView.getHeaderView(0).findViewById(R.id.drawer_user_email_txt);
+
+        drawerUserFuulName.setText(mDataManager.getPreferencesManager().getUserFullName());
+        drawerUserEmail.setText(mDataManager.getPreferencesManager().getUserEmail());
+
+        insertDrawerAvatar(mDataManager.getPreferencesManager().loadUserAvatar());
+
+        mNavigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(MenuItem item) {
                 showSnackbar(item.getTitle().toString());
@@ -294,6 +316,7 @@ public class MainActivity extends BaseActivity {
 
                 if (item.getItemId() == R.id.login_menu) {
                     Intent authIntent = new Intent(MainActivity.this, AuthActivity.class);
+                    finish();
                     startActivity(authIntent);
                 }
 
@@ -312,7 +335,7 @@ public class MainActivity extends BaseActivity {
             case ConstantManager.REQUEST_GALLERY_PICTURE:
                 if (resultCode == RESULT_OK && data != null) {
                     mSelectedImage = data.getData();
-
+                    mDataManager.getPreferencesManager().saveUserPhoto(mSelectedImage);
                     insertProfileImage(mSelectedImage);
                 }
                 break;
@@ -320,7 +343,7 @@ public class MainActivity extends BaseActivity {
             case ConstantManager.REQUEST_CAMERA_PICTURE:
                 if(resultCode == RESULT_OK && mPhotoFile != null) {
                     mSelectedImage = Uri.fromFile(mPhotoFile);
-
+                    mDataManager.getPreferencesManager().saveUserPhoto(mSelectedImage);
                     insertProfileImage(mSelectedImage);
                 }
         }
@@ -349,6 +372,8 @@ public class MainActivity extends BaseActivity {
      */
     private void changeEditMode(int mode) {
         if (mode == 1) {
+            mCurrentProfileImage = mDataManager.getPreferencesManager().loadUserPhoto();
+
             mFab.setImageResource(R.drawable.ic_done_black_24dp);
 
             ButterKnife.apply(mUserFields, EDIT_TEXT_ENABLED, true);
@@ -369,25 +394,68 @@ public class MainActivity extends BaseActivity {
             unlockToolbar();
             mCollapsingToolbar.setExpandedTitleColor(getResources().getColor(R.color.white));
 
-            saveUserInfoValue();
+            saveUserFields();
+
+            if (mSelectedImage != null && !mSelectedImage.equals(mCurrentProfileImage)) {
+                sendPhotoToServer();
+                mCurrentProfileImage = mSelectedImage;
+            }
 
             mCurrentEditMode = 0;
         }
     }
 
-    private void loadUserInfoValue() {
+    private void sendPhotoToServer() {
+        String userId = mDataManager.getPreferencesManager().getUserId();
+
+        File file = MediaStoreFileHelper.getFileByUri(this, mSelectedImage);
+        RequestBody requestFile = RequestBody.create(MediaType.parse("multipart/form-data"), file);
+        MultipartBody.Part body = MultipartBody.Part.createFormData("photo", file.getName(), requestFile);
+
+        if (NetworkStatusChecker.isNetworkAvailable(this)) {
+            Call<ResponseBody> call = mDataManager.uploadPhoto(userId, body);
+            call.enqueue(new Callback<ResponseBody>() {
+                @Override
+                public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                    if (response.code() == 200) {
+                        showSnackbar("Фото сохранено на сайте");
+                    } else {
+                        showSnackbar("Фото сохранить на сайте не удалось");
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ResponseBody> call, Throwable t) {
+                    showSnackbar("Ошибка: " + t.getMessage());
+                }
+            });
+        } else {
+            showSnackbar("Сеть на данный момент недоступна, попробуйте позже");
+        }
+
+        return;
+    }
+
+    private void initUserFields() {
         List<String> userData = mDataManager.getPreferencesManager().loadUserProfileData();
         for (int i = 0; i < userData.size(); i++) {
             mUserFields.get(i).setText(userData.get(i));
         }
     }
 
-    private void saveUserInfoValue() {
+    private void saveUserFields() {
         List<String> userData = new ArrayList<>();
         for (EditText userFieldView : mUserFields) {
             userData.add(userFieldView.getText().toString());
         }
         mDataManager.getPreferencesManager().saveUserProfileData(userData);
+    }
+
+    private void initUserInfoValue() {
+        List<String> userData = mDataManager.getPreferencesManager().loadUserProfileValues();
+        for (int i = 0; i < userData.size(); i++) {
+            mUserValueViews.get(i).setText(userData.get(i));
+        }
     }
 
     private void loadPhotoFromGallery() {
@@ -520,7 +588,17 @@ public class MainActivity extends BaseActivity {
                 .centerCrop()
                 .placeholder(R.drawable.user_bg)
                 .into(mProfileImage);
-        mDataManager.getPreferencesManager().saveUserPhoto(selectedImage);
+    }
+
+    private void insertDrawerAvatar(Uri selectedImage) {
+        Picasso.with(this)
+                .load(selectedImage)
+                .resize(getResources().getDimensionPixelSize(R.dimen.drawer_header_avatar_size),
+                        getResources().getDimensionPixelSize(R.dimen.drawer_header_avatar_size))
+                .centerCrop()
+                .transform(new RoundedImageTransformation())
+                .placeholder(R.drawable.avatar_bg)
+                .into(drawerUsrAvatar);
     }
 
     private void openApplicationSettings() {
@@ -550,25 +628,24 @@ public class MainActivity extends BaseActivity {
                 VKList vkList = (VKList) response.parsedModel;
                 VKApiUserFull vkApiUserFull = (VKApiUserFull) vkList.get(0);
 
-                String userFullName = vkApiUserFull.toString();
-                String userPhone = vkApiUserFull.fields.optString("mobile_phone", "");
-                String userVkUrl = "vk.com/" + vkApiUserFull.fields.optString("screen_name", "");
-                String userSite = vkApiUserFull.fields.optString("site", "");
-                String userAbout = vkApiUserFull.fields.optString("about", "");
-                String userPhotoUrl = vkApiUserFull.fields.optString("photo_max_orig", "");
+                List<String> userField = new ArrayList<>();
+                userField.add(vkApiUserFull.fields.optString("mobile_phone", ""));
+                userField.add("");
+                userField.add("vk.com/" + vkApiUserFull.fields.optString("screen_name", ""));
+                userField.add(vkApiUserFull.fields.optString("site", ""));
+                userField.add(vkApiUserFull.fields.optString("about", ""));
 
-                mCollapsingToolbar.setTitle(userFullName);
-                mUserPhone.setText(userPhone);
-                //mUserMail.setText("");
-                mUserVk.setText(userVkUrl);
-                mUserGit.setText(userSite);
-                mUserBio.setText(userAbout);
+                mDataManager.getPreferencesManager().saveUserPhoto(Uri.parse(vkApiUserFull.fields.optString("photo_max_orig", "")));
+                mDataManager.getPreferencesManager().saveUserFullName(vkApiUserFull.toString());
+                mDataManager.getPreferencesManager().saveUserProfileData(userField);
 
-                insertProfileImage(Uri.parse(userPhotoUrl));
+                finish();
+                startActivity(getIntent());
             }
             @Override
             public void onError(VKError error) {
-                showSnackbar("Данные не получены: " + error.toString());
+                showSnackbar("Данные не получены: " + error.toString()
+);
             }
             @Override
             public void attemptFailed(VKRequest request, int attemptNumber, int totalAttempts) {

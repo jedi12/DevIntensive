@@ -87,7 +87,7 @@
             android:orientation="horizontal"
             android:paddingBottom="@dimen/spacing_medium_32"
             android:paddingTop="@dimen/spacing_medium_32"
-            app:layout_behavior="com.softdesign.devintensive.utils.HeaderBehavior">
+            app:layout_behavior="com.softdesign.devintensive.ui.behaviors.HeaderBehavior">
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -96,7 +96,7 @@
                 android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/rating_txt"
+                    android:id="@+id/user_info_rait_txt"
                     style="@style/header_text.large"
                     android:text="@string/header_rating_vol"/>
 
@@ -118,7 +118,7 @@
                 android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/code_strings_txt"
+                    android:id="@+id/user_info_code_lines_txt"
                     style="@style/header_text.large"
                     android:text="@string/header_code_strings_vol"/>
 
@@ -140,7 +140,7 @@
                 android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/projects_txt"
+                    android:id="@+id/user_info_projects_txt"
                     style="@style/header_text.large"
                     android:text="@string/header_projects_vol"/>
 
