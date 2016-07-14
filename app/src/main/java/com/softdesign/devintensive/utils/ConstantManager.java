@@ -3,6 +3,7 @@ package com.softdesign.devintensive.utils;
 public interface ConstantManager {
     String TAG_PREFIX = "DEV ";
     String EDIT_MODE_KEY = "EDIT_MODE_KEY";
+    String PARCELABLE_KEY = "PARCELABLE_KEY";
 
     String EDIT_PHONE_KEY = "EDIT_PHONE_KEY";
     String EDIT_MAIL_KEY = "EDIT_MAIL_KEY";
