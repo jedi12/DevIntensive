@@ -79,8 +79,13 @@ public class ProfileUserActivity extends AppCompatActivity {
 
         mCollapsingToolbar.setTitle(userDTO.getFullName());
 
+        String userPhoto = userDTO.getPhoto();
+        if (userPhoto.trim().equals("")) {
+            userPhoto = null;
+        }
+
         Picasso.with(this)
-                .load(userDTO.getPhoto())
+                .load(userPhoto)
                 .placeholder(R.drawable.user_bg)
                 .error(R.drawable.user_bg)
                 .into(mProfileImage);

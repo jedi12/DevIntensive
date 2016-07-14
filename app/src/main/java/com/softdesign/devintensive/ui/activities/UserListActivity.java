@@ -7,12 +7,15 @@ import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
 import android.support.v4.view.GravityCompat;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -28,6 +31,8 @@ import com.softdesign.devintensive.utils.RoundedImageTransformation;
 import com.squareup.picasso.Picasso;
 import com.vk.sdk.VKSdk;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import butterknife.BindView;
@@ -36,7 +41,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class UserListActivity extends AppCompatActivity {
+public class UserListActivity extends AppCompatActivity implements SearchView.OnQueryTextListener {
 
     private static final String TAG = ConstantManager.TAG_PREFIX + "UserListActivity";
 
@@ -75,6 +80,44 @@ public class UserListActivity extends AppCompatActivity {
             actionBar.setHomeAsUpIndicator(R.drawable.ic_menu_black_24dp);
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.toolbar_menu, menu);
+
+        MenuItem searchItem = menu.findItem(R.id.search);
+        SearchView searchView = (SearchView) MenuItemCompat.getActionView(searchItem);
+        searchView.setOnQueryTextListener(this);
+
+        return true;
+    }
+
+    @Override
+    public boolean onQueryTextSubmit(String query) {
+
+        return true;
+    }
+
+    @Override
+    public boolean onQueryTextChange(String newText) {
+        final List<UserListRes.UserData> filteredModelList = filter(mUsers, newText);
+        mUsersAdapter.setFilter(filteredModelList);
+
+        return false;
+    }
+
+    private List<UserListRes.UserData> filter(List<UserListRes.UserData> models, String query) {
+        query = query.toLowerCase();
+
+        final List<UserListRes.UserData> filteredModelList = new ArrayList<>();
+        for (UserListRes.UserData model : models) {
+            final String text = model.getFullName().toLowerCase();
+            if (text.contains(query)) {
+                filteredModelList.add(model);
+            }
+        }
+        return filteredModelList;
     }
 
     @Override
@@ -153,7 +196,8 @@ public class UserListActivity extends AppCompatActivity {
                         mUsersAdapter = new UsersAdapter(mUsers, new UsersAdapter.UserViewHolder.CustomClickListener() {
                             @Override
                             public void onUserItemClickListener(int adapterPosition) {
-                                UserDTO userDTO = new UserDTO(mUsers.get(adapterPosition));
+                                //UserDTO userDTO = new UserDTO(mUsers.get(adapterPosition));
+                                UserDTO userDTO = new UserDTO(mUsersAdapter.getUser(adapterPosition));
                                 Intent profileIntent = new Intent(UserListActivity.this, ProfileUserActivity.class);
                                 profileIntent.putExtra(ConstantManager.PARCELABLE_KEY, userDTO);
 

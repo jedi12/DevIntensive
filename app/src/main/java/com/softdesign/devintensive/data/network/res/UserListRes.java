@@ -63,5 +63,25 @@ public class UserListRes {
         public String getFullName() {
             return firstName + " " + secondName;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            UserData userData = (UserData) o;
+
+            if (firstName != null ? !firstName.equals(userData.firstName) : userData.firstName != null)
+                return false;
+            return secondName != null ? secondName.equals(userData.secondName) : userData.secondName == null;
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = firstName != null ? firstName.hashCode() : 0;
+            result = 31 * result + (secondName != null ? secondName.hashCode() : 0);
+            return result;
+        }
     }
 }

@@ -13,6 +13,7 @@ import com.softdesign.devintensive.data.network.res.UserListRes;
 import com.softdesign.devintensive.ui.views.AspectRatioImageView;
 import com.squareup.picasso.Picasso;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UserViewHolder> {
@@ -37,8 +38,13 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UserViewHold
     public void onBindViewHolder(UsersAdapter.UserViewHolder holder, int position) {
         UserListRes.UserData user = mUsers.get(position);
 
+        String userPhoto = user.getPublicInfo().getPhoto();
+        if (userPhoto.trim().equals("")) {
+            userPhoto = null;
+        }
+
         Picasso.with(mContext)
-                .load(user.getPublicInfo().getPhoto())
+                .load(userPhoto)
                 .resize(mContext.getResources().getDimensionPixelSize(R.dimen.profile_image_size),
                         mContext.getResources().getDimensionPixelSize(R.dimen.profile_image_size))
                 .centerCrop()
@@ -62,6 +68,16 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UserViewHold
     @Override
     public int getItemCount() {
         return mUsers.size();
+    }
+
+    public void setFilter(List<UserListRes.UserData> users) {
+        mUsers = new ArrayList<>();
+        mUsers.addAll(users);
+        notifyDataSetChanged();
+    }
+
+    public UserListRes.UserData getUser(int position) {
+        return mUsers.get(position);
     }
 
     public static class UserViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
@@ -95,7 +111,7 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UserViewHold
         }
 
         public interface CustomClickListener {
-            void  onUserItemClickListener(int adapterPosition);
+            void onUserItemClickListener(int adapterPosition);
         }
     }
 }
