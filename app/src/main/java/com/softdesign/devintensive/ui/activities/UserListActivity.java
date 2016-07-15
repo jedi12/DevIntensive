@@ -10,7 +10,6 @@ import android.support.v4.view.GravityCompat;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
@@ -25,6 +24,7 @@ import com.softdesign.devintensive.data.managers.DataManager;
 import com.softdesign.devintensive.data.network.res.UserListRes;
 import com.softdesign.devintensive.data.storage.models.UserDTO;
 import com.softdesign.devintensive.ui.adapters.UsersAdapter;
+import com.softdesign.devintensive.ui.fragments.RetainFragment;
 import com.softdesign.devintensive.utils.ConstantManager;
 import com.softdesign.devintensive.utils.NetworkStatusChecker;
 import com.softdesign.devintensive.utils.RoundedImageTransformation;
@@ -32,7 +32,6 @@ import com.squareup.picasso.Picasso;
 import com.vk.sdk.VKSdk;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import butterknife.BindView;
@@ -41,14 +40,16 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class UserListActivity extends AppCompatActivity implements SearchView.OnQueryTextListener {
+public class UserListActivity extends BaseActivity implements SearchView.OnQueryTextListener {
 
     private static final String TAG = ConstantManager.TAG_PREFIX + "UserListActivity";
+
+    private static final String TAG_RETAIN_FRAGMENT = "retain_fragment";
+    private RetainFragment mRetainFragment;
 
     private ImageView drawerUsrAvatar;
     private DataManager mDataManager;
     private UsersAdapter mUsersAdapter;
-    private List<UserListRes.UserData> mUsers;
 
     @BindView(R.id.main_coordinator_container) CoordinatorLayout mCoordinatorLayout;
     @BindView(R.id.toolbar) Toolbar mToolbar;
@@ -62,6 +63,12 @@ public class UserListActivity extends AppCompatActivity implements SearchView.On
         setContentView(R.layout.activity_user_list);
         ButterKnife.bind(this);
 
+        mRetainFragment = (RetainFragment) getSupportFragmentManager().findFragmentByTag(TAG_RETAIN_FRAGMENT);
+        if (mRetainFragment == null) {
+            mRetainFragment = new RetainFragment();
+            getSupportFragmentManager().beginTransaction().add(mRetainFragment, TAG_RETAIN_FRAGMENT).commit();
+        }
+
         mDataManager = DataManager.getInstance();
 
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
@@ -69,7 +76,12 @@ public class UserListActivity extends AppCompatActivity implements SearchView.On
 
         setupToolBar();
         setupDrawer();
-        loadUsers();
+
+        if (savedInstanceState == null) {
+            loadUsersListAndSetupAdapter();
+        } else {
+            setupUsersListAdapter(mRetainFragment.getUsersList());
+        }
     }
 
     private void setupToolBar() {
@@ -95,13 +107,12 @@ public class UserListActivity extends AppCompatActivity implements SearchView.On
 
     @Override
     public boolean onQueryTextSubmit(String query) {
-
         return true;
     }
 
     @Override
     public boolean onQueryTextChange(String newText) {
-        final List<UserListRes.UserData> filteredModelList = filter(mUsers, newText);
+        final List<UserListRes.UserData> filteredModelList = filter(mRetainFragment.getUsersList(), newText);
         mUsersAdapter.setFilter(filteredModelList);
 
         return false;
@@ -185,38 +196,48 @@ public class UserListActivity extends AppCompatActivity implements SearchView.On
                 .into(drawerUsrAvatar);
     }
 
-    private void loadUsers() {
+    private void loadUsersListAndSetupAdapter() {
         if (NetworkStatusChecker.isNetworkAvailable(this)) {
+
+            showProgress();
+
             Call<UserListRes> call = mDataManager.getUserList();
             call.enqueue(new Callback<UserListRes>() {
                 @Override
                 public void onResponse(Call<UserListRes> call, Response<UserListRes> response) {
                     if (response.code() == 200) {
-                        mUsers = response.body().getData();
-                        mUsersAdapter = new UsersAdapter(mUsers, new UsersAdapter.UserViewHolder.CustomClickListener() {
-                            @Override
-                            public void onUserItemClickListener(int adapterPosition) {
-                                //UserDTO userDTO = new UserDTO(mUsers.get(adapterPosition));
-                                UserDTO userDTO = new UserDTO(mUsersAdapter.getUser(adapterPosition));
-                                Intent profileIntent = new Intent(UserListActivity.this, ProfileUserActivity.class);
-                                profileIntent.putExtra(ConstantManager.PARCELABLE_KEY, userDTO);
-
-                                startActivity(profileIntent);
-                            }
-                        });
-                        mRecyclerView.setAdapter(mUsersAdapter);
+                        mRetainFragment.setUsersList(response.body().getData());
+                        setupUsersListAdapter(mRetainFragment.getUsersList());
                     } else {
                         showSnackbar("Не удалось получить данные с сервера: " + response.code());
                     }
+
+                    hideProgress();
                 }
 
                 @Override
                 public void onFailure(Call<UserListRes> call, Throwable t) {
                     showSnackbar("Ошибка: " + t.getMessage());
+
+                    hideProgress();
                 }
             });
         } else {
             showSnackbar("Сеть на данный момент недоступна, попробуйте позже");
         }
+    }
+
+    private void setupUsersListAdapter(ArrayList<UserListRes.UserData> users) {
+        mUsersAdapter = new UsersAdapter(users, new UsersAdapter.UserViewHolder.CustomClickListener() {
+            @Override
+            public void onUserItemClickListener(int adapterPosition) {
+                UserDTO userDTO = new UserDTO(mUsersAdapter.getUser(adapterPosition));
+                Intent profileIntent = new Intent(UserListActivity.this, ProfileUserActivity.class);
+                profileIntent.putExtra(ConstantManager.PARCELABLE_KEY, userDTO);
+
+                startActivity(profileIntent);
+            }
+        });
+        mRecyclerView.setAdapter(mUsersAdapter);
     }
 }

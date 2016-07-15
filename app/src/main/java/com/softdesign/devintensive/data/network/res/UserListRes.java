@@ -3,6 +3,7 @@ package com.softdesign.devintensive.data.network.res;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,13 +13,13 @@ public class UserListRes {
     private boolean success;
     @SerializedName("data")
     @Expose
-    private List<UserData> data = new ArrayList<UserData>();
+    private ArrayList<UserData> data = new ArrayList<UserData>();
 
-    public List<UserData> getData() {
+    public ArrayList<UserData> getData() {
         return data;
     }
 
-    public class UserData {
+    public class UserData implements Serializable {
 
         @SerializedName("_id")
         @Expose

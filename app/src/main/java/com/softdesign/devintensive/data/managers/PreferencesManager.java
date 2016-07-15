@@ -2,15 +2,12 @@ package com.softdesign.devintensive.data.managers;
 
 import android.content.SharedPreferences;
 import android.net.Uri;
-import android.widget.EditText;
 
 import com.softdesign.devintensive.utils.ConstantManager;
 import com.softdesign.devintensive.utils.DevintensiveApplication;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class PreferencesManager {
     private SharedPreferences mSharedPreferences;
