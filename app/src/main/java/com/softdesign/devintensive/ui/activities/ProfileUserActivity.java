@@ -5,13 +5,14 @@ import android.net.Uri;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -71,6 +72,7 @@ public class ProfileUserActivity extends BaseActivity {
                 startActivity(viewRepoIntent);
             }
         });
+        setupListViewHeight(mRepoListView);
 
         mUserBio.setText(userDTO.getBio());
         mUserRating.setText(userDTO.getRating());
@@ -89,5 +91,22 @@ public class ProfileUserActivity extends BaseActivity {
                 .placeholder(R.drawable.user_bg)
                 .error(R.drawable.user_bg)
                 .into(mProfileImage);
+    }
+
+    public static void setupListViewHeight(ListView listView) {
+        ListAdapter listAdapter = listView.getAdapter();
+        if (listAdapter == null)
+            return;
+
+        View view = listAdapter.getView(0, null, listView);
+        view.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+
+        int totalHeight = view.getMeasuredHeight() * listAdapter.getCount();
+
+        ViewGroup.LayoutParams params = listView.getLayoutParams();
+        params.height = totalHeight + listView.getDividerHeight() * (listAdapter.getCount() - 1);
+        listView.setLayoutParams(params);
+        listView.requestLayout();
     }
 }
