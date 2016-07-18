@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/size_large_72">
+
+    <android.support.design.widget.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_marginRight="@dimen/size_large_72">
+
+        <EditText
+            android:id="@+id/repo_edit"
+            style="@style/text_edit_element"
+            android:hint="@string/contacts_repo"
+            android:inputType="textUri"
+            android:text="@string/contacts_repo_vol"/>
+
+    </android.support.design.widget.TextInputLayout>
+
+    <ImageView
+        style="@style/icon.right"
+        android:src="@drawable/ic_visibility_black_24dp"
+        android:layout_centerVertical="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"/>
+
+</RelativeLayout>

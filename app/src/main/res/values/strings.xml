@@ -47,5 +47,7 @@
     <string name="error_permission_need">Для корректной работы необходимо дать требуемые разрешения</string>
     <string name="approve">Разрешить</string>
     <string name="menu_login_vk">Войти через VK</string>
+    <string name="more_info_btn">Просмотр</string>
+    <string name="search_title">Поиск</string>
 
 </resources>

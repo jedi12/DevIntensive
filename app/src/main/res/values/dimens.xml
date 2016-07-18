@@ -27,7 +27,8 @@
     <dimen name="text_size_normal_14">14sp</dimen>
     <dimen name="text_size_medial_16">16sp</dimen>
     <dimen name="text_size_medium_20">20sp</dimen>
-    <dimen name="text_size_large_34">34sp</dimen>
+    <dimen name="text_size_large_24">24sp</dimen>
+    <dimen name="text_size_larger_34">34sp</dimen>
 
     <dimen name="drawer_header_height">172dp</dimen>
     <dimen name="profile_image_size">256dp</dimen>

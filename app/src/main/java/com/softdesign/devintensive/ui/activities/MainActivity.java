@@ -88,8 +88,6 @@ public class MainActivity extends BaseActivity {
     private Uri mCurrentProfileImage;
 
     private ImageView drawerUsrAvatar;
-    private TextView drawerUserFuulName;
-    private TextView drawerUserEmail;
 
     @BindView(R.id.main_coordinator_container) CoordinatorLayout mCoordinatorLayout;
     @BindView(R.id.toolbar) Toolbar mToolbar;
@@ -145,12 +143,6 @@ public class MainActivity extends BaseActivity {
         setupDrawer();
         initUserFields();
         initUserInfoValue();
-
-        if (savedInstanceState == null) {
-
-        } else {
-
-        }
     }
 
     @Override
@@ -299,10 +291,10 @@ public class MainActivity extends BaseActivity {
     private void setupDrawer() {
 
         drawerUsrAvatar = (ImageView) mNavigationView.getHeaderView(0).findViewById(R.id.drawer_avatar_img);
-        drawerUserFuulName = (TextView) mNavigationView.getHeaderView(0).findViewById(R.id.drawer_user_name_txt);
-        drawerUserEmail = (TextView) mNavigationView.getHeaderView(0).findViewById(R.id.drawer_user_email_txt);
+        TextView drawerUserFullName = (TextView) mNavigationView.getHeaderView(0).findViewById(R.id.drawer_user_name_txt);
+        TextView drawerUserEmail = (TextView) mNavigationView.getHeaderView(0).findViewById(R.id.drawer_user_email_txt);
 
-        drawerUserFuulName.setText(mDataManager.getPreferencesManager().getUserFullName());
+        drawerUserFullName.setText(mDataManager.getPreferencesManager().getUserFullName());
         drawerUserEmail.setText(mDataManager.getPreferencesManager().getUserEmail());
 
         insertDrawerAvatar(mDataManager.getPreferencesManager().loadUserAvatar());
@@ -313,6 +305,16 @@ public class MainActivity extends BaseActivity {
                 showSnackbar(item.getTitle().toString());
                 item.setChecked(true);
                 mNavigationDrawer.closeDrawer(GravityCompat.START);
+
+                if (item.getItemId() == R.id.user_profile_menu) {
+
+                }
+
+                if (item.getItemId() == R.id.team_menu) {
+                    Intent authIntent = new Intent(MainActivity.this, UserListActivity.class);
+                    finish();
+                    startActivity(authIntent);
+                }
 
                 if (item.getItemId() == R.id.login_menu) {
                     Intent authIntent = new Intent(MainActivity.this, AuthActivity.class);
