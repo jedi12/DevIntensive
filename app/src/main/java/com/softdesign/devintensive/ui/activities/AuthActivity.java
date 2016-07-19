@@ -177,8 +177,6 @@ public class AuthActivity extends BaseActivity {
                 @Override
                 public void onFailure(Call<UserListRes> call, Throwable t) {
                     showSnackbar("Ошибка: " + t.getMessage());
-
-                    hideProgress();
                 }
             });
     }

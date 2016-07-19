@@ -3,7 +3,7 @@ package com.softdesign.devintensive.ui.activities;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
+import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
@@ -20,10 +20,12 @@ import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.redmadrobot.chronos.ChronosConnector;
 import com.softdesign.devintensive.R;
 import com.softdesign.devintensive.data.managers.DataManager;
 import com.softdesign.devintensive.data.storage.models.User;
 import com.softdesign.devintensive.data.storage.models.UserDTO;
+import com.softdesign.devintensive.data.storage.tasks.GetUserListFromDbTask;
 import com.softdesign.devintensive.ui.adapters.UsersAdapter;
 import com.softdesign.devintensive.ui.fragments.RetainFragment;
 import com.softdesign.devintensive.utils.ConstantManager;
@@ -43,13 +45,14 @@ public class UserListActivity extends BaseActivity {
     private static final String TAG_RETAIN_FRAGMENT = "retain_fragment";
     private RetainFragment mRetainFragment;
 
+    private final ChronosConnector mChronosConnector = new ChronosConnector();
+
     private ImageView drawerUsrAvatar;
     private DataManager mDataManager;
     private UsersAdapter mUsersAdapter;
     private List<User> mUsers;
     private MenuItem mSearchItem;
-    private String mQuery;
-    private Handler mHandler;
+    private int currTask;
 
     @BindView(R.id.main_coordinator_container) CoordinatorLayout mCoordinatorLayout;
     @BindView(R.id.toolbar) Toolbar mToolbar;
@@ -69,19 +72,18 @@ public class UserListActivity extends BaseActivity {
             getSupportFragmentManager().beginTransaction().add(mRetainFragment, TAG_RETAIN_FRAGMENT).commit();
         }
 
+        mChronosConnector.onCreate(this, savedInstanceState);
+
         mDataManager = DataManager.getInstance();
 
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(linearLayoutManager);
-
-        mHandler = new Handler();
 
         setupToolBar();
         setupDrawer();
 
         if (savedInstanceState == null) {
             mUsers = mDataManager.getUserListFromDb();
-            mRetainFragment.setUsersList(mUsers);
         } else {
             mUsers = mRetainFragment.getUsersList();
         }
@@ -91,7 +93,26 @@ public class UserListActivity extends BaseActivity {
             return;
         }
 
-        showUsers(mUsers);
+        currTask = mChronosConnector.runOperation(new GetUserListFromDbTask(), false);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mChronosConnector.onResume();
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull final Bundle outState) {
+        super.onSaveInstanceState(outState);
+        mChronosConnector.onSaveInstanceState(outState);
+        mRetainFragment.setUsersList(mUsers);
+    }
+
+    @Override
+    protected void onPause() {
+        mChronosConnector.onPause();
+        super.onPause();
     }
 
     private void setupToolBar() {
@@ -185,11 +206,18 @@ public class UserListActivity extends BaseActivity {
             public boolean onQueryTextChange(String newText) {
                 showUserByQuery(newText);
 
-                return false;
+                return true;
             }
         });
 
         return super.onPrepareOptionsMenu(menu);
+    }
+
+    private void showUserByQuery(String query) {
+        if (mChronosConnector.isOperationRunning(currTask)) {
+            mChronosConnector.cancelOperation(currTask, true);
+        }
+        currTask = mChronosConnector.runOperation(new GetUserListFromDbTask(query, GetUserListFromDbTask.BY_NAME), false);
     }
 
     private void showUsers(List<User> users) {
@@ -208,21 +236,11 @@ public class UserListActivity extends BaseActivity {
 
     }
 
-    private void showUserByQuery(String query) {
-        mQuery = query;
-
-        Runnable searchUsers = new Runnable() {
-            @Override
-            public void run() {
-                showUsers(mDataManager.getUserListByName(mQuery));
-            }
-        };
-
-        mHandler.removeCallbacks(searchUsers);
-        if (mQuery.trim().equals("")) {
-            mHandler.post(searchUsers);
+    public void onOperationFinished(final GetUserListFromDbTask.Result result) {
+        if (result.isSuccessful()) {
+            showUsers(result.getOutput());
         } else {
-            mHandler.postDelayed(searchUsers, ConstantManager.SEARCH_DELAY);
+            showSnackbar(result.getErrorMessage());
         }
     }
 }
