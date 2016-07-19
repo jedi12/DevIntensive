@@ -58,7 +58,6 @@ public class DataManager {
 
     public Picasso getPicasso() {
 //        mPicasso.setIndicatorsEnabled(true);
-//        mPicasso.setLoggingEnabled(true);
         return mPicasso;
     }
 
@@ -91,7 +90,8 @@ public class DataManager {
         try {
             userList = mDaoSession.queryBuilder(User.class)
                     .where(UserDao.Properties.CodeLines.gt(0))
-                    .orderDesc(UserDao.Properties.CodeLines)
+                    .orderDesc(UserDao.Properties.Rating)
+                    .orderDesc()
                     .build()
                     .list();
         } catch (Exception e) {
@@ -108,7 +108,8 @@ public class DataManager {
             userList = mDaoSession.queryBuilder(User.class)
                     .where(UserDao.Properties.Rating.gt(0),
                             UserDao.Properties.SearchName.like("%" + query.toUpperCase() + "%"))
-                    .orderDesc(UserDao.Properties.CodeLines)
+                    .orderDesc(UserDao.Properties.Rating)
+                    .orderDesc()
                     .build()
                     .list();
         } catch (Exception e) {

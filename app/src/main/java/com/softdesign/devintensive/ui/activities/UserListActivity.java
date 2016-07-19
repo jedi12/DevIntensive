@@ -25,7 +25,7 @@ import com.softdesign.devintensive.R;
 import com.softdesign.devintensive.data.managers.DataManager;
 import com.softdesign.devintensive.data.storage.models.User;
 import com.softdesign.devintensive.data.storage.models.UserDTO;
-import com.softdesign.devintensive.data.storage.tasks.GetUserListFromDbTask;
+import com.softdesign.devintensive.data.storage.tasks.LoadUserListFromDbTask;
 import com.softdesign.devintensive.ui.adapters.UsersAdapter;
 import com.softdesign.devintensive.ui.fragments.RetainFragment;
 import com.softdesign.devintensive.utils.ConstantManager;
@@ -65,14 +65,13 @@ public class UserListActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_list);
         ButterKnife.bind(this);
+        mChronosConnector.onCreate(this, savedInstanceState);
 
         mRetainFragment = (RetainFragment) getSupportFragmentManager().findFragmentByTag(TAG_RETAIN_FRAGMENT);
         if (mRetainFragment == null) {
             mRetainFragment = new RetainFragment();
             getSupportFragmentManager().beginTransaction().add(mRetainFragment, TAG_RETAIN_FRAGMENT).commit();
         }
-
-        mChronosConnector.onCreate(this, savedInstanceState);
 
         mDataManager = DataManager.getInstance();
 
@@ -93,7 +92,7 @@ public class UserListActivity extends BaseActivity {
             return;
         }
 
-        currTask = mChronosConnector.runOperation(new GetUserListFromDbTask(), false);
+        currTask = mChronosConnector.runOperation(new LoadUserListFromDbTask(), false);
     }
 
     @Override
@@ -217,7 +216,7 @@ public class UserListActivity extends BaseActivity {
         if (mChronosConnector.isOperationRunning(currTask)) {
             mChronosConnector.cancelOperation(currTask, true);
         }
-        currTask = mChronosConnector.runOperation(new GetUserListFromDbTask(query, GetUserListFromDbTask.BY_NAME), false);
+        currTask = mChronosConnector.runOperation(new LoadUserListFromDbTask(query, LoadUserListFromDbTask.BY_NAME), false);
     }
 
     private void showUsers(List<User> users) {
@@ -236,7 +235,7 @@ public class UserListActivity extends BaseActivity {
 
     }
 
-    public void onOperationFinished(final GetUserListFromDbTask.Result result) {
+    public void onOperationFinished(final LoadUserListFromDbTask.Result result) {
         if (result.isSuccessful()) {
             showUsers(result.getOutput());
         } else {

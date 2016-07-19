@@ -11,17 +11,17 @@ import com.softdesign.devintensive.data.storage.models.User;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GetUserListFromDbTask extends ChronosOperation<List<User>> {
+public class LoadUserListFromDbTask extends ChronosOperation<List<User>> {
     public static final String BY_NAME = "BY_NAME";
 
     private String mCriteria;
     private String mQuery;
 
-    public GetUserListFromDbTask() {
+    public LoadUserListFromDbTask() {
 
     }
 
-    public GetUserListFromDbTask(String userName, String criteria) {
+    public LoadUserListFromDbTask(String userName, String criteria) {
         mQuery = userName;
         mCriteria = criteria;
     }

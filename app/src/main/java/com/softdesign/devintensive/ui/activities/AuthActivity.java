@@ -20,12 +20,15 @@ import com.softdesign.devintensive.data.network.res.UserModelRes;
 import com.softdesign.devintensive.data.storage.models.Repository;
 import com.softdesign.devintensive.data.storage.models.RepositoryDao;
 import com.softdesign.devintensive.data.storage.models.User;
-import com.softdesign.devintensive.data.storage.models.UserDTO;
 import com.softdesign.devintensive.data.storage.models.UserDao;
-import com.softdesign.devintensive.ui.adapters.UsersAdapter;
+import com.softdesign.devintensive.ext.MessageEvent;
 import com.softdesign.devintensive.utils.AppConfig;
 import com.softdesign.devintensive.utils.ConstantManager;
 import com.softdesign.devintensive.utils.NetworkStatusChecker;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +42,13 @@ import retrofit2.Response;
 
 public class AuthActivity extends BaseActivity {
     private static final String TAG = ConstantManager.TAG_PREFIX + "AuthActivity";
+
+    private static final String NETWORK_NOT_AVAILABLE = "NETWORK_NOT_AVAILABLE";
+    private static final String USERLIST_LOADED_AND_SAVED = "USERLIST_LOADED_AND_SAVED";
+    private static final String USER_NOT_AUTHORIZED = "USER_NOT_AUTHORIZED";
+    private static final String RESPONSE_NOT_OK = "RESPONSE_NOT_OK";
+    private static final String SERVER_ERROR = "SERVER_ERROR";
+    private static final String LOGIN_OR_PASSWORD_INCORRECT = "LOGIN_OR_PASSWORD_INCORRECT";
 
     private DataManager mDataManager;
     private RepositoryDao mRepositoryDao;
@@ -60,6 +70,65 @@ public class AuthActivity extends BaseActivity {
         mDataManager = DataManager.getInstance();
         mUserDao = mDataManager.getDaoSession().getUserDao();
         mRepositoryDao = mDataManager.getDaoSession().getRepositoryDao();
+
+        showSplash();
+        loadUserListFromServerAndSaveInDbOnBackground();
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onMessageEvent(MessageEvent event) {
+        hideSplash();
+        hideProgress();
+
+        switch (event.message) {
+            case NETWORK_NOT_AVAILABLE:
+                startUserMainActivity();
+
+                break;
+
+            case USERLIST_LOADED_AND_SAVED:
+                startUserMainActivity();
+
+                break;
+
+            case USER_NOT_AUTHORIZED:
+                showSnackbar("Необходима авторизация");
+
+                break;
+
+            case LOGIN_OR_PASSWORD_INCORRECT:
+                showSnackbar("Неверный логин или пароль");
+
+                break;
+
+            case RESPONSE_NOT_OK:
+                startUserMainActivity();
+
+                break;
+
+            case SERVER_ERROR:
+                startUserMainActivity();
+
+                break;
+        }
+    }
+
+    private void startUserMainActivity() {
+        Intent loginIntent = new Intent(AuthActivity.this, MainActivity.class);
+        finish();
+        startActivity(loginIntent);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        EventBus.getDefault().register(this);
+    }
+
+    @Override
+    public void onStop() {
+        EventBus.getDefault().unregister(this);
+        super.onStop();
     }
 
     private void showSnackbar(String message) {
@@ -74,53 +143,47 @@ public class AuthActivity extends BaseActivity {
 
     @OnClick(R.id.auth_login_btn)
     protected void signIn() {
-        if (NetworkStatusChecker.isNetworkAvailable(this)) {
-            Call<UserModelRes> call = mDataManager.loginUser(new UserLoginReq(mAuthLogin.getText().toString(), mAuthPass.getText().toString()));
-            call.enqueue(new Callback<UserModelRes>() {
-                @Override
-                public void onResponse(Call<UserModelRes> call, Response<UserModelRes> response) {
-                    if (response.code() == 200) {
-                        loginSuccess(response.body());
-                    } else if (response.code() == 404) {
-                        showSnackbar("Неверный логин или пароль");
-                    } else {
-                        showSnackbar("Всё пропало Шеф!!!");
-                    }
-                }
+        showProgress();
 
-                @Override
-                public void onFailure(Call<UserModelRes> call, Throwable t) {
-                    showSnackbar("Ошибка: " + t.getMessage());
-                }
-            });
-        } else {
-            showSnackbar("Сеть на данный момент недоступна, попробуйте позже");
+        if (!NetworkStatusChecker.isNetworkAvailable(AuthActivity.this)) {
+            EventBus.getDefault().post(new MessageEvent(NETWORK_NOT_AVAILABLE));
+            return;
         }
+
+        Call<UserModelRes> call = mDataManager.loginUser(new UserLoginReq(mAuthLogin.getText().toString(), mAuthPass.getText().toString()));
+        call.enqueue(new Callback<UserModelRes>() {
+            @Override
+            public void onResponse(Call<UserModelRes> call, Response<UserModelRes> response) {
+                if (response.code() == 200) {
+                    loginSuccess(response.body());
+                    //EventBus.getDefault().post(new MessageEvent(USERLIST_LOADED_AND_SAVED));
+                } else if (response.code() == 404) {
+                    EventBus.getDefault().post(new MessageEvent(LOGIN_OR_PASSWORD_INCORRECT));
+                } else {
+                    Log.e(TAG, "Network error: " + response.message());
+                    EventBus.getDefault().post(new MessageEvent(RESPONSE_NOT_OK));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<UserModelRes> call, Throwable t) {
+                Log.e(TAG, "Network failure: " + t.getMessage());
+                EventBus.getDefault().post(new MessageEvent(SERVER_ERROR));
+            }
+        });
     }
 
     protected void loginSuccess(UserModelRes userModel) {
-        showSnackbar(userModel.getData().getToken());
         mDataManager.getPreferencesManager().saveAuthToken(userModel.getData().getToken());
         mDataManager.getPreferencesManager().saveUserId(userModel.getData().getUser().getId());
         mDataManager.getPreferencesManager().saveUserPhoto(Uri.parse(userModel.getData().getUser().getPublicInfo().getPhoto()));
         mDataManager.getPreferencesManager().saveUserAvatar(Uri.parse(userModel.getData().getUser().getPublicInfo().getAvatar()));
         mDataManager.getPreferencesManager().saveUserFullName(userModel.getData().getUser().getFirstName() + " " + userModel.getData().getUser().getSecondName());
+
         saveUserValues(userModel);
         saveUserData(userModel);
 
-        saveUserInDb();
-
-        Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                Intent loginIntent = new Intent(AuthActivity.this, UserListActivity.class);
-//                finish();
-                startActivity(loginIntent);
-            }
-        }, AppConfig.START_DELAY);
-
-
+        loadUserListFromServerAndSaveInDbOnBackground();
     }
 
     private void saveUserValues(UserModelRes userModel) {
@@ -144,41 +207,61 @@ public class AuthActivity extends BaseActivity {
         mDataManager.getPreferencesManager().saveUserProfileData(userData);
     }
 
-    private void saveUserInDb() {
-            Call<UserListRes> call = mDataManager.getUserListFromNetwork();
-            call.enqueue(new Callback<UserListRes>() {
-                @Override
-                public void onResponse(Call<UserListRes> call, Response<UserListRes> response) {
-                    try {
-                        if (response.code() == 200) {
+    private void loadUserListFromServerAndSaveInDbOnBackground() {
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                loadUserListFromServerSaveInDb();
+            }
+        }, AppConfig.START_DELAY);
+    }
 
-                            List<Repository> allRepositories = new ArrayList<>();
-                            List<User> allUsers = new ArrayList<>();
+    private void loadUserListFromServerSaveInDb() {
+        if (!NetworkStatusChecker.isNetworkAvailable(AuthActivity.this)) {
+            EventBus.getDefault().post(new MessageEvent(NETWORK_NOT_AVAILABLE));
+            return;
+        }
 
-                            for (UserListRes.UserData userRes : response.body().getData()) {
+        Call<UserListRes> call = mDataManager.getUserListFromNetwork();
+        call.enqueue(new Callback<UserListRes>() {
+            @Override
+            public void onResponse(Call<UserListRes> call, Response<UserListRes> response) {
+                try {
+                    if (response.code() == 200) {
 
-                                allRepositories.addAll(getRepoListFromUserRes(userRes));
-                                allUsers.add(new User(userRes));
-                            }
+                        List<Repository> allRepositories = new ArrayList<>();
+                        List<User> allUsers = new ArrayList<>();
 
-                            mRepositoryDao.insertOrReplaceInTx(allRepositories);
-                            mUserDao.insertOrReplaceInTx(allUsers);
-
-                        } else {
-                            showSnackbar("Список пользователей не может быть получен");
-                            Log.e(TAG, "onResponse: " + String.valueOf(response.errorBody().source()));
+                        for (UserListRes.UserData userRes : response.body().getData()) {
+                            allRepositories.addAll(getRepoListFromUserRes(userRes));
+                            allUsers.add(new User(userRes));
                         }
-                    } catch (NullPointerException e){
-                        e.printStackTrace();
-                        showSnackbar("Что-то пошло не так");
-                    }
-                }
 
-                @Override
-                public void onFailure(Call<UserListRes> call, Throwable t) {
-                    showSnackbar("Ошибка: " + t.getMessage());
+                        mRepositoryDao.insertOrReplaceInTx(allRepositories);
+                        mUserDao.insertOrReplaceInTx(allUsers);
+
+                        EventBus.getDefault().post(new MessageEvent(USERLIST_LOADED_AND_SAVED));
+
+                    } else if (response.code() == 401) {
+                        EventBus.getDefault().post(new MessageEvent(USER_NOT_AUTHORIZED));
+
+                    } else {
+                        Log.e(TAG, "Network error: " + response.message());
+                        EventBus.getDefault().post(new MessageEvent(RESPONSE_NOT_OK));
+                    }
+                } catch (NullPointerException e){
+                    e.printStackTrace();
+                    showSnackbar("Что-то пошло не так");
                 }
-            });
+            }
+
+            @Override
+            public void onFailure(Call<UserListRes> call, Throwable t) {
+                Log.e(TAG, "Network failure: " + t.getMessage());
+                EventBus.getDefault().post(new MessageEvent(SERVER_ERROR));
+            }
+        });
     }
 
     private List<Repository> getRepoListFromUserRes(UserListRes.UserData userData) {

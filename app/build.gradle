@@ -50,6 +50,7 @@ dependencies {
     compile 'com.jakewharton.picasso:picasso2-okhttp3-downloader:1.0.2'
 
     compile 'com.redmadrobot:chronos:1.0.7'
+    compile 'org.greenrobot:eventbus:3.0.0'
 
     apt 'com.jakewharton:butterknife-compiler:8.1.0'
 }
