@@ -299,6 +299,8 @@ public class MainActivity extends BaseActivity {
 
         insertDrawerAvatar(mDataManager.getPreferencesManager().loadUserAvatar());
 
+        mNavigationView.getMenu().getItem(0).setChecked(true);
+
         mNavigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(MenuItem item) {
@@ -355,6 +357,7 @@ public class MainActivity extends BaseActivity {
                     @Override
                     public void onResult(VKAccessToken res) {
                         loadVkUserInfo();
+                        mDataManager.getPreferencesManager().saveAuthToken("");
                     }
 
                     @Override

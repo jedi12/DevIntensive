@@ -46,9 +46,12 @@ public class AuthActivity extends BaseActivity {
     private static final String NETWORK_NOT_AVAILABLE = "NETWORK_NOT_AVAILABLE";
     private static final String USERLIST_LOADED_AND_SAVED = "USERLIST_LOADED_AND_SAVED";
     private static final String USER_NOT_AUTHORIZED = "USER_NOT_AUTHORIZED";
+    private static final String AUTH_TOKEN_RECEIVED = "AUTH_TOKEN_RECEIVED";
     private static final String RESPONSE_NOT_OK = "RESPONSE_NOT_OK";
     private static final String SERVER_ERROR = "SERVER_ERROR";
     private static final String LOGIN_OR_PASSWORD_INCORRECT = "LOGIN_OR_PASSWORD_INCORRECT";
+    private static final String SHOW_SPLASH = "SHOW_SPLASH";
+    private static final String SHOW_PROGRESS = "SHOW_PROGRESS";
 
     private DataManager mDataManager;
     private RepositoryDao mRepositoryDao;
@@ -77,37 +80,60 @@ public class AuthActivity extends BaseActivity {
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onMessageEvent(MessageEvent event) {
-        hideSplash();
-        hideProgress();
 
         switch (event.message) {
             case NETWORK_NOT_AVAILABLE:
+                hideSplash();
+                hideProgress();
                 startUserMainActivity();
 
                 break;
 
             case USERLIST_LOADED_AND_SAVED:
+                hideSplash();
+                hideProgress();
                 startUserMainActivity();
 
                 break;
 
             case USER_NOT_AUTHORIZED:
+                hideSplash();
                 showSnackbar("Необходима авторизация");
 
                 break;
 
+            case AUTH_TOKEN_RECEIVED:
+                loadUserListFromServerAndSaveInDbOnBackground();
+
+                break;
+
             case LOGIN_OR_PASSWORD_INCORRECT:
+                hideProgress();
                 showSnackbar("Неверный логин или пароль");
 
                 break;
 
             case RESPONSE_NOT_OK:
+                hideSplash();
+                hideProgress();
                 startUserMainActivity();
 
                 break;
 
             case SERVER_ERROR:
+                hideSplash();
+                hideProgress();
                 startUserMainActivity();
+
+                break;
+
+            case SHOW_SPLASH:
+                showSplash();
+
+                break;
+
+            case SHOW_PROGRESS:
+                showProgress();
 
                 break;
         }
@@ -143,7 +169,7 @@ public class AuthActivity extends BaseActivity {
 
     @OnClick(R.id.auth_login_btn)
     protected void signIn() {
-        showProgress();
+        EventBus.getDefault().post(new MessageEvent(SHOW_PROGRESS));
 
         if (!NetworkStatusChecker.isNetworkAvailable(AuthActivity.this)) {
             EventBus.getDefault().post(new MessageEvent(NETWORK_NOT_AVAILABLE));
@@ -155,8 +181,12 @@ public class AuthActivity extends BaseActivity {
             @Override
             public void onResponse(Call<UserModelRes> call, Response<UserModelRes> response) {
                 if (response.code() == 200) {
-                    loginSuccess(response.body());
-                    //EventBus.getDefault().post(new MessageEvent(USERLIST_LOADED_AND_SAVED));
+                    mDataManager.getPreferencesManager().saveAuthToken(response.body().getData().getToken());
+                    mDataManager.getPreferencesManager().saveUserId(response.body().getData().getUser().getId());
+
+                    loadUserProfile(response.body());
+
+                    EventBus.getDefault().post(new MessageEvent(AUTH_TOKEN_RECEIVED));
                 } else if (response.code() == 404) {
                     EventBus.getDefault().post(new MessageEvent(LOGIN_OR_PASSWORD_INCORRECT));
                 } else {
@@ -173,30 +203,19 @@ public class AuthActivity extends BaseActivity {
         });
     }
 
-    protected void loginSuccess(UserModelRes userModel) {
-        mDataManager.getPreferencesManager().saveAuthToken(userModel.getData().getToken());
-        mDataManager.getPreferencesManager().saveUserId(userModel.getData().getUser().getId());
+    protected void loadUserProfile(UserModelRes userModel) {
+
         mDataManager.getPreferencesManager().saveUserPhoto(Uri.parse(userModel.getData().getUser().getPublicInfo().getPhoto()));
         mDataManager.getPreferencesManager().saveUserAvatar(Uri.parse(userModel.getData().getUser().getPublicInfo().getAvatar()));
         mDataManager.getPreferencesManager().saveUserFullName(userModel.getData().getUser().getFirstName() + " " + userModel.getData().getUser().getSecondName());
 
-        saveUserValues(userModel);
-        saveUserData(userModel);
-
-        loadUserListFromServerAndSaveInDbOnBackground();
-    }
-
-    private void saveUserValues(UserModelRes userModel) {
         int[] userValues = {
                 userModel.getData().getUser().getProfileValues().getRaiting(),
                 userModel.getData().getUser().getProfileValues().getLinesCode(),
                 userModel.getData().getUser().getProfileValues().getProjects()
         };
-
         mDataManager.getPreferencesManager().saveUserProfileValues(userValues);
-    }
 
-    private void saveUserData(UserModelRes userModel) {
         List<String> userData = new ArrayList<>();
         userData.add(userModel.getData().getUser().getContacts().getPhone());
         userData.add(userModel.getData().getUser().getContacts().getEmail());
@@ -218,6 +237,7 @@ public class AuthActivity extends BaseActivity {
     }
 
     private void loadUserListFromServerSaveInDb() {
+
         if (!NetworkStatusChecker.isNetworkAvailable(AuthActivity.this)) {
             EventBus.getDefault().post(new MessageEvent(NETWORK_NOT_AVAILABLE));
             return;

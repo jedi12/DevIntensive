@@ -132,6 +132,17 @@ public class UserListActivity extends BaseActivity {
     }
 
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mDataManager.saveUserListOrderInDb(mUsers);
+        if (mSortCriteria == null || mSortCriteria.equals("")) {
+            mDataManager.getPreferencesManager().saveSortCriteria(LoadUserListFromDbTask.NO_SORT);
+        } else {
+            mDataManager.getPreferencesManager().saveSortCriteria(mSortCriteria);
+        }
+    }
+
+    @Override
     protected void onPause() {
         mChronosConnector.onPause();
         super.onPause();
@@ -168,6 +179,8 @@ public class UserListActivity extends BaseActivity {
         drawerUserEmail.setText(mDataManager.getPreferencesManager().getUserEmail());
 
         insertDrawerAvatar(mDataManager.getPreferencesManager().loadUserAvatar());
+
+        mNavigationView.getMenu().getItem(1).setChecked(true);
 
         mNavigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override

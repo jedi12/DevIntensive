@@ -36,7 +36,7 @@
     <string name="user_profile.chose.message">Выберите фото</string>
     <string name="menu_my_profile">Мой профиль</string>
     <string name="menu_team">Команда</string>
-    <string name="menu_login">Вход</string>
+    <string name="menu_login">Вход через DevIntensive</string>
     <string name="drawer_header_user_name">Прибытков Андрей</string>
     <string name="drawer_header_user_email">myMail@mail.ru</string>
     <string name="auth_enter_txt">ВОЙТИ</string>
@@ -46,7 +46,7 @@
     <string name="error_correct_profile">Исправьте ошибки в профиле</string>
     <string name="error_permission_need">Для корректной работы необходимо дать требуемые разрешения</string>
     <string name="approve">Разрешить</string>
-    <string name="menu_login_vk">Войти через VK</string>
+    <string name="menu_login_vk">Вход через VK</string>
     <string name="more_info_btn">Просмотр</string>
     <string name="search_title">Поиск</string>
 
