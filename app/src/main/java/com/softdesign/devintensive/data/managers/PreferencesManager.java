@@ -122,4 +122,14 @@ public class PreferencesManager {
     public String getUserEmail() {
         return mSharedPreferences.getString(ConstantManager.EDIT_MAIL_KEY, "");
     }
+
+    public void saveSortCriteria(String sortCriteria) {
+        SharedPreferences.Editor editor = mSharedPreferences.edit();
+        editor.putString(ConstantManager.SORT_CRITERIA, sortCriteria);
+        editor.apply();
+    }
+
+    public String getSortCriteria() {
+        return mSharedPreferences.getString(ConstantManager.SORT_CRITERIA, "");
+    }
 }

@@ -12,14 +12,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class LoadUserListFromDbTask extends ChronosOperation<List<User>> {
-    public static final String BY_NAME = "BY_NAME";
+    public static final String NO_SORT = "NO_SORT";
+    public static final String SORT_BY_NAME = "SORT_BY_NAME";
 
     private String mCriteria;
     private String mQuery;
 
-    public LoadUserListFromDbTask() {
-
-    }
+//    public LoadUserListFromDbTask() {
+//
+//    }
 
     public LoadUserListFromDbTask(String userName, String criteria) {
         mQuery = userName;
@@ -31,12 +32,16 @@ public class LoadUserListFromDbTask extends ChronosOperation<List<User>> {
     public List<User> run() {
         final List<User> result ;
 
-        if (mCriteria == null) {
-            result = DataManager.getInstance().getUserListFromDb();
+        if (mCriteria == null || mCriteria.equals("")) {
+            result = DataManager.getInstance().getAllUserListOrderedByRatingFromDb();
         } else {
             switch (mCriteria) {
-                case BY_NAME:
-                    result = DataManager.getInstance().getUserListByName(mQuery);
+                case NO_SORT:
+                    result = DataManager.getInstance().getUserListByUserOrderedFromDb();
+                    break;
+
+                case SORT_BY_NAME:
+                    result = DataManager.getInstance().getUserListSortedByNameFromDb(mQuery);
                     break;
 
                 default:

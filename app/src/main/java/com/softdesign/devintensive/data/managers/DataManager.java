@@ -11,8 +11,13 @@ import com.softdesign.devintensive.data.network.res.UserModelRes;
 import com.softdesign.devintensive.data.storage.models.DaoSession;
 import com.softdesign.devintensive.data.storage.models.User;
 import com.softdesign.devintensive.data.storage.models.UserDao;
+import com.softdesign.devintensive.data.storage.models.UserOrder;
+import com.softdesign.devintensive.data.storage.models.UserOrderDao;
 import com.softdesign.devintensive.utils.DevintensiveApplication;
 import com.squareup.picasso.Picasso;
+
+import org.greenrobot.greendao.query.QueryBuilder;
+import org.greenrobot.greendao.query.WhereCondition;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -84,14 +89,12 @@ public class DataManager {
         return mDaoSession;
     }
 
-    public List<User> getUserListFromDb() {
+    public List<User> getAllUserListOrderedByRatingFromDb() {
         List<User> userList = new ArrayList<>();
 
         try {
             userList = mDaoSession.queryBuilder(User.class)
-                    .where(UserDao.Properties.CodeLines.gt(0))
                     .orderDesc(UserDao.Properties.Rating)
-                    .orderDesc()
                     .build()
                     .list();
         } catch (Exception e) {
@@ -101,15 +104,14 @@ public class DataManager {
         return userList;
     }
 
-    public List<User> getUserListByName(String query) {
+    public List<User> getUserListSortedByNameFromDb(String query) {
 
         List<User> userList = new ArrayList<>();
         try {
             userList = mDaoSession.queryBuilder(User.class)
                     .where(UserDao.Properties.Rating.gt(0),
                             UserDao.Properties.SearchName.like("%" + query.toUpperCase() + "%"))
-                    .orderDesc(UserDao.Properties.Rating)
-                    .orderDesc()
+//                    .orderDesc(UserDao.Properties.Rating)
                     .build()
                     .list();
         } catch (Exception e) {
@@ -117,6 +119,37 @@ public class DataManager {
         }
 
         return userList;
+    }
+
+    public List<User> getUserListByUserOrderedFromDb() {
+
+        List<User> userList = new ArrayList<>();
+        try {
+            QueryBuilder<User> queryBuilder = mDaoSession.queryBuilder(User.class);
+            queryBuilder.join(UserDao.Properties.RemoteId, UserOrder.class, UserOrderDao.Properties.UserRemoteId);
+            queryBuilder.where(UserDao.Properties.Rating.gt(0));
+            queryBuilder.orderRaw("USER_ORDER ASC");
+            queryBuilder.distinct();
+            userList = queryBuilder.list();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return userList;
+    }
+
+    public void saveUserListOrderInDb(List<User> userList) {
+
+        try {
+            mDaoSession.getUserOrderDao().deleteAll();
+
+            for (int i = 0; i < userList.size(); i++) {
+                mDaoSession.getUserOrderDao().insertInTx(new UserOrder(userList.get(i).getRemoteId(), i));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // endregion

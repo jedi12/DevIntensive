@@ -15,6 +15,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
@@ -52,7 +53,8 @@ public class UserListActivity extends BaseActivity {
     private UsersAdapter mUsersAdapter;
     private List<User> mUsers;
     private MenuItem mSearchItem;
-    private int currTask;
+    private int mCurrTask;
+    private String mSortCriteria;
 
     @BindView(R.id.main_coordinator_container) CoordinatorLayout mCoordinatorLayout;
     @BindView(R.id.toolbar) Toolbar mToolbar;
@@ -77,22 +79,37 @@ public class UserListActivity extends BaseActivity {
 
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(linearLayoutManager);
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+            @Override
+            public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
+                final int fromPosition = viewHolder.getAdapterPosition();
+                final int toPosition = target.getAdapterPosition();
+
+                mUsers.add(toPosition, mUsers.remove(fromPosition));
+                mUsersAdapter.notifyItemMoved(fromPosition, toPosition);
+
+                return true;
+            }
+
+            @Override
+            public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = viewHolder.getAdapterPosition();
+                mUsers.remove(position);
+                mUsersAdapter.notifyDataSetChanged();
+            }
+        });
+        itemTouchHelper.attachToRecyclerView(mRecyclerView);
 
         setupToolBar();
         setupDrawer();
 
+        mSortCriteria = mDataManager.getPreferencesManager().getSortCriteria();
         if (savedInstanceState == null) {
-            mUsers = mDataManager.getUserListFromDb();
+            mCurrTask = mChronosConnector.runOperation(new LoadUserListFromDbTask(null, mSortCriteria), false);
         } else {
             mUsers = mRetainFragment.getUsersList();
+            showUsers(mUsers);
         }
-
-        if (mUsers.isEmpty()) {
-            showSnackbar("Список пользователей не может быть загружен");
-            return;
-        }
-
-        currTask = mChronosConnector.runOperation(new LoadUserListFromDbTask(), false);
     }
 
     @Override
@@ -106,6 +123,12 @@ public class UserListActivity extends BaseActivity {
         super.onSaveInstanceState(outState);
         mChronosConnector.onSaveInstanceState(outState);
         mRetainFragment.setUsersList(mUsers);
+        mDataManager.saveUserListOrderInDb(mUsers);
+        if (mSortCriteria == null || mSortCriteria.equals("")) {
+            mDataManager.getPreferencesManager().saveSortCriteria(LoadUserListFromDbTask.NO_SORT);
+        } else {
+            mDataManager.getPreferencesManager().saveSortCriteria(mSortCriteria);
+        }
     }
 
     @Override
@@ -213,10 +236,10 @@ public class UserListActivity extends BaseActivity {
     }
 
     private void showUserByQuery(String query) {
-        if (mChronosConnector.isOperationRunning(currTask)) {
-            mChronosConnector.cancelOperation(currTask, true);
+        if (mChronosConnector.isOperationRunning(mCurrTask)) {
+            mChronosConnector.cancelOperation(mCurrTask, true);
         }
-        currTask = mChronosConnector.runOperation(new LoadUserListFromDbTask(query, LoadUserListFromDbTask.BY_NAME), false);
+        mCurrTask = mChronosConnector.runOperation(new LoadUserListFromDbTask(query, LoadUserListFromDbTask.SORT_BY_NAME), false);
     }
 
     private void showUsers(List<User> users) {
@@ -237,6 +260,12 @@ public class UserListActivity extends BaseActivity {
 
     public void onOperationFinished(final LoadUserListFromDbTask.Result result) {
         if (result.isSuccessful()) {
+            mUsers = result.getOutput();
+
+            if (mUsers.isEmpty()) {
+                showSnackbar("Список пользователей пустой");
+                return;
+            }
             showUsers(result.getOutput());
         } else {
             showSnackbar(result.getErrorMessage());
