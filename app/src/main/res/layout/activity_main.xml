@@ -12,13 +12,15 @@
     <android.support.design.widget.CoordinatorLayout
         android:id="@+id/main_coordinator_container"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:fitsSystemWindows="true">
 
         <android.support.design.widget.AppBarLayout
             android:id="@+id/appbar_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:theme="@style/AppTheme.AppBarOverlay">
+            android:theme="@style/AppTheme.AppBarOverlay"
+            android:fitsSystemWindows="true">
 
             <android.support.design.widget.CollapsingToolbarLayout
                 android:id="@+id/collapsing_toolbar"
@@ -72,7 +74,8 @@
                     android:id="@+id/toolbar"
                     android:layout_width="match_parent"
                     android:layout_height="?attr/actionBarSize"
-                    android:theme="@style/AppTheme.PopupOverlay"
+                    app:popupTheme="@style/AppTheme.PopupOverlay"
+                    app:theme="@style/ToolBarStyle"
                     android:titleTextColor="@color/white"
                     app:layout_collapseMode="pin"/>
 

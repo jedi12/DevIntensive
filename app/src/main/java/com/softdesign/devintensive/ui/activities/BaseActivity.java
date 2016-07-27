@@ -15,17 +15,30 @@ public class BaseActivity extends AppCompatActivity {
     protected ProgressDialog mProgressDialog;
 
     public void showProgress() {
-        if (mProgressDialog == null) {
-            mProgressDialog = new ProgressDialog(this, R.style.custom_dialog);
-            mProgressDialog.setCancelable(false);
-            mProgressDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        }
-
+        mProgressDialog = new ProgressDialog(this, R.style.custom_dialog);
+        mProgressDialog.setCancelable(false);
+        mProgressDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         mProgressDialog.show();
-        mProgressDialog.setContentView(R.layout.progress_splash);
+        mProgressDialog.setContentView(R.layout.progress_circle);
     }
 
     public void hideProgress() {
+        if (mProgressDialog != null) {
+            if (mProgressDialog.isShowing()) {
+                mProgressDialog.hide();
+                mProgressDialog.dismiss();
+            }
+        }
+    }
+
+    public void showSplash() {
+        mProgressDialog = new ProgressDialog(this, R.style.custom_dialog);
+        mProgressDialog.setCancelable(false);
+        mProgressDialog.show();
+        mProgressDialog.setContentView(R.layout.splash_screen);
+    }
+
+    public void hideSplash() {
         if (mProgressDialog != null) {
             if (mProgressDialog.isShowing()) {
                 mProgressDialog.hide();

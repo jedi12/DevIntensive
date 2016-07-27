@@ -3,6 +3,7 @@ package com.softdesign.devintensive.ui.activities;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
@@ -14,42 +15,46 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.redmadrobot.chronos.ChronosConnector;
 import com.softdesign.devintensive.R;
 import com.softdesign.devintensive.data.managers.DataManager;
-import com.softdesign.devintensive.data.network.res.UserListRes;
+import com.softdesign.devintensive.data.storage.models.User;
 import com.softdesign.devintensive.data.storage.models.UserDTO;
+import com.softdesign.devintensive.data.storage.tasks.LoadUserListFromDbTask;
 import com.softdesign.devintensive.ui.adapters.UsersAdapter;
 import com.softdesign.devintensive.ui.fragments.RetainFragment;
 import com.softdesign.devintensive.utils.ConstantManager;
-import com.softdesign.devintensive.utils.NetworkStatusChecker;
 import com.softdesign.devintensive.utils.RoundedImageTransformation;
 import com.squareup.picasso.Picasso;
 import com.vk.sdk.VKSdk;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
-public class UserListActivity extends BaseActivity implements SearchView.OnQueryTextListener {
+public class UserListActivity extends BaseActivity {
 
     private static final String TAG = ConstantManager.TAG_PREFIX + "UserListActivity";
 
     private static final String TAG_RETAIN_FRAGMENT = "retain_fragment";
     private RetainFragment mRetainFragment;
 
+    private final ChronosConnector mChronosConnector = new ChronosConnector();
+
     private ImageView drawerUsrAvatar;
     private DataManager mDataManager;
     private UsersAdapter mUsersAdapter;
+    private List<User> mUsers;
+    private MenuItem mSearchItem;
+    private int mCurrTask;
+    private String mSortCriteria;
 
     @BindView(R.id.main_coordinator_container) CoordinatorLayout mCoordinatorLayout;
     @BindView(R.id.toolbar) Toolbar mToolbar;
@@ -62,6 +67,7 @@ public class UserListActivity extends BaseActivity implements SearchView.OnQuery
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_list);
         ButterKnife.bind(this);
+        mChronosConnector.onCreate(this, savedInstanceState);
 
         mRetainFragment = (RetainFragment) getSupportFragmentManager().findFragmentByTag(TAG_RETAIN_FRAGMENT);
         if (mRetainFragment == null) {
@@ -73,15 +79,73 @@ public class UserListActivity extends BaseActivity implements SearchView.OnQuery
 
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(linearLayoutManager);
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+            @Override
+            public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
+                final int fromPosition = viewHolder.getAdapterPosition();
+                final int toPosition = target.getAdapterPosition();
+
+                mUsers.add(toPosition, mUsers.remove(fromPosition));
+                mUsersAdapter.notifyItemMoved(fromPosition, toPosition);
+
+                return true;
+            }
+
+            @Override
+            public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = viewHolder.getAdapterPosition();
+                mUsers.remove(position);
+                mUsersAdapter.notifyDataSetChanged();
+            }
+        });
+        itemTouchHelper.attachToRecyclerView(mRecyclerView);
 
         setupToolBar();
         setupDrawer();
 
+        mSortCriteria = mDataManager.getPreferencesManager().getSortCriteria();
         if (savedInstanceState == null) {
-            loadUsersListAndSetupAdapter();
+            mCurrTask = mChronosConnector.runOperation(new LoadUserListFromDbTask(null, mSortCriteria), false);
         } else {
-            setupUsersListAdapter(mRetainFragment.getUsersList());
+            mUsers = mRetainFragment.getUsersList();
+            showUsers(mUsers);
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mChronosConnector.onResume();
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull final Bundle outState) {
+        super.onSaveInstanceState(outState);
+        mChronosConnector.onSaveInstanceState(outState);
+        mRetainFragment.setUsersList(mUsers);
+        mDataManager.saveUserListOrderInDb(mUsers);
+        if (mSortCriteria == null || mSortCriteria.equals("")) {
+            mDataManager.getPreferencesManager().saveSortCriteria(LoadUserListFromDbTask.NO_SORT);
+        } else {
+            mDataManager.getPreferencesManager().saveSortCriteria(mSortCriteria);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mDataManager.saveUserListOrderInDb(mUsers);
+        if (mSortCriteria == null || mSortCriteria.equals("")) {
+            mDataManager.getPreferencesManager().saveSortCriteria(LoadUserListFromDbTask.NO_SORT);
+        } else {
+            mDataManager.getPreferencesManager().saveSortCriteria(mSortCriteria);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        mChronosConnector.onPause();
+        super.onPause();
     }
 
     private void setupToolBar() {
@@ -92,43 +156,6 @@ public class UserListActivity extends BaseActivity implements SearchView.OnQuery
             actionBar.setHomeAsUpIndicator(R.drawable.ic_menu_black_24dp);
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.toolbar_menu, menu);
-
-        MenuItem searchItem = menu.findItem(R.id.search);
-        SearchView searchView = (SearchView) MenuItemCompat.getActionView(searchItem);
-        searchView.setOnQueryTextListener(this);
-
-        return true;
-    }
-
-    @Override
-    public boolean onQueryTextSubmit(String query) {
-        return true;
-    }
-
-    @Override
-    public boolean onQueryTextChange(String newText) {
-        final List<UserListRes.UserData> filteredModelList = filter(mRetainFragment.getUsersList(), newText);
-        mUsersAdapter.setFilter(filteredModelList);
-
-        return false;
-    }
-
-    private List<UserListRes.UserData> filter(List<UserListRes.UserData> models, String query) {
-        query = query.toLowerCase();
-
-        final List<UserListRes.UserData> filteredModelList = new ArrayList<>();
-        for (UserListRes.UserData model : models) {
-            final String text = model.getFullName().toLowerCase();
-            if (text.contains(query)) {
-                filteredModelList.add(model);
-            }
-        }
-        return filteredModelList;
     }
 
     @Override
@@ -152,6 +179,8 @@ public class UserListActivity extends BaseActivity implements SearchView.OnQuery
         drawerUserEmail.setText(mDataManager.getPreferencesManager().getUserEmail());
 
         insertDrawerAvatar(mDataManager.getPreferencesManager().loadUserAvatar());
+
+        mNavigationView.getMenu().getItem(1).setChecked(true);
 
         mNavigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override
@@ -188,56 +217,71 @@ public class UserListActivity extends BaseActivity implements SearchView.OnQuery
     private void insertDrawerAvatar(Uri selectedImage) {
         Picasso.with(this)
                 .load(selectedImage)
-                .resize(getResources().getDimensionPixelSize(R.dimen.drawer_header_avatar_size),
-                        getResources().getDimensionPixelSize(R.dimen.drawer_header_avatar_size))
+                .fit()
                 .centerCrop()
                 .transform(new RoundedImageTransformation())
                 .placeholder(R.drawable.avatar_bg)
                 .into(drawerUsrAvatar);
     }
 
-    private void loadUsersListAndSetupAdapter() {
-        if (NetworkStatusChecker.isNetworkAvailable(this)) {
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.search_menu, menu);
 
-            showProgress();
+        mSearchItem = menu.findItem(R.id.search_action);
+        SearchView searchView = (SearchView) MenuItemCompat.getActionView(mSearchItem);
+        searchView.setQueryHint("Введите имя пользователя");
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
 
-            Call<UserListRes> call = mDataManager.getUserList();
-            call.enqueue(new Callback<UserListRes>() {
-                @Override
-                public void onResponse(Call<UserListRes> call, Response<UserListRes> response) {
-                    if (response.code() == 200) {
-                        mRetainFragment.setUsersList(response.body().getData());
-                        setupUsersListAdapter(mRetainFragment.getUsersList());
-                    } else {
-                        showSnackbar("Не удалось получить данные с сервера: " + response.code());
-                    }
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                showUserByQuery(newText);
 
-                    hideProgress();
-                }
+                return true;
+            }
+        });
 
-                @Override
-                public void onFailure(Call<UserListRes> call, Throwable t) {
-                    showSnackbar("Ошибка: " + t.getMessage());
-
-                    hideProgress();
-                }
-            });
-        } else {
-            showSnackbar("Сеть на данный момент недоступна, попробуйте позже");
-        }
+        return super.onPrepareOptionsMenu(menu);
     }
 
-    private void setupUsersListAdapter(ArrayList<UserListRes.UserData> users) {
-        mUsersAdapter = new UsersAdapter(users, new UsersAdapter.UserViewHolder.CustomClickListener() {
+    private void showUserByQuery(String query) {
+        if (mChronosConnector.isOperationRunning(mCurrTask)) {
+            mChronosConnector.cancelOperation(mCurrTask, true);
+        }
+        mCurrTask = mChronosConnector.runOperation(new LoadUserListFromDbTask(query, LoadUserListFromDbTask.SORT_BY_NAME), false);
+    }
+
+    private void showUsers(List<User> users) {
+        mUsers = users;
+        mUsersAdapter = new UsersAdapter(mUsers, new UsersAdapter.UserViewHolder.CustomClickListener() {
             @Override
-            public void onUserItemClickListener(int adapterPosition) {
-                UserDTO userDTO = new UserDTO(mUsersAdapter.getUser(adapterPosition));
+            public void onUserItemClickListener(int position) {
+                UserDTO userDTO = new UserDTO(mUsers.get(position));
                 Intent profileIntent = new Intent(UserListActivity.this, ProfileUserActivity.class);
                 profileIntent.putExtra(ConstantManager.PARCELABLE_KEY, userDTO);
 
                 startActivity(profileIntent);
             }
         });
-        mRecyclerView.setAdapter(mUsersAdapter);
+        mRecyclerView.swapAdapter(mUsersAdapter, false);
+
+    }
+
+    public void onOperationFinished(final LoadUserListFromDbTask.Result result) {
+        if (result.isSuccessful()) {
+            mUsers = result.getOutput();
+
+            if (mUsers.isEmpty()) {
+                showSnackbar("Список пользователей пустой");
+                return;
+            }
+            showUsers(result.getOutput());
+        } else {
+            showSnackbar(result.getErrorMessage());
+        }
     }
 }

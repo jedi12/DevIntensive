@@ -299,6 +299,8 @@ public class MainActivity extends BaseActivity {
 
         insertDrawerAvatar(mDataManager.getPreferencesManager().loadUserAvatar());
 
+        mNavigationView.getMenu().getItem(0).setChecked(true);
+
         mNavigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(MenuItem item) {
@@ -355,6 +357,7 @@ public class MainActivity extends BaseActivity {
                     @Override
                     public void onResult(VKAccessToken res) {
                         loadVkUserInfo();
+                        mDataManager.getPreferencesManager().saveAuthToken("");
                     }
 
                     @Override
@@ -585,8 +588,7 @@ public class MainActivity extends BaseActivity {
     private void insertProfileImage(Uri selectedImage) {
         Picasso.with(this)
                 .load(selectedImage)
-                .resize(getResources().getDimensionPixelSize(R.dimen.profile_image_size),
-                        getResources().getDimensionPixelSize(R.dimen.profile_image_size))
+                .fit()
                 .centerCrop()
                 .placeholder(R.drawable.user_bg)
                 .into(mProfileImage);
@@ -595,8 +597,7 @@ public class MainActivity extends BaseActivity {
     private void insertDrawerAvatar(Uri selectedImage) {
         Picasso.with(this)
                 .load(selectedImage)
-                .resize(getResources().getDimensionPixelSize(R.dimen.drawer_header_avatar_size),
-                        getResources().getDimensionPixelSize(R.dimen.drawer_header_avatar_size))
+                .fit()
                 .centerCrop()
                 .transform(new RoundedImageTransformation())
                 .placeholder(R.drawable.avatar_bg)

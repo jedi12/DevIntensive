@@ -7,6 +7,7 @@ import android.support.design.widget.CoordinatorLayout;
 import android.support.v7.app.ActionBar;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -17,9 +18,12 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.softdesign.devintensive.R;
+import com.softdesign.devintensive.data.managers.DataManager;
 import com.softdesign.devintensive.data.storage.models.UserDTO;
 import com.softdesign.devintensive.ui.adapters.RepositoriesAdapter;
 import com.softdesign.devintensive.utils.ConstantManager;
+import com.squareup.picasso.Callback;
+import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
@@ -28,6 +32,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class ProfileUserActivity extends BaseActivity {
+    private static final String TAG = ConstantManager.TAG_PREFIX + "ProfileUserActivity";
 
     @BindView(R.id.toolbar) Toolbar mToolbar;
     @BindView(R.id.user_photo_img) ImageView mProfileImage;
@@ -81,15 +86,20 @@ public class ProfileUserActivity extends BaseActivity {
 
         mCollapsingToolbar.setTitle(userDTO.getFullName());
 
-        String userPhoto = userDTO.getPhoto();
-        if (userPhoto.trim().equals("")) {
-            userPhoto = null;
+        final String userPhoto;
+        if (userDTO.getPhoto().isEmpty()) {
+            userPhoto = "null";
+            Log.e(TAG, "onBindViewHolder: user with name " + userDTO.getFullName() + " has empty name");
+        } else {
+            userPhoto = userDTO.getPhoto();
         }
 
-        Picasso.with(this)
+        DataManager.getInstance().getPicasso()
                 .load(userPhoto)
-                .placeholder(R.drawable.user_bg)
                 .error(R.drawable.user_bg)
+                .placeholder(R.drawable.user_bg)
+                .fit()
+                .centerCrop()
                 .into(mProfileImage);
     }
 

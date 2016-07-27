@@ -4,6 +4,7 @@ public interface ConstantManager {
     String TAG_PREFIX = "DEV ";
     String EDIT_MODE_KEY = "EDIT_MODE_KEY";
     String PARCELABLE_KEY = "PARCELABLE_KEY";
+    String SORT_CRITERIA = "SORT_CRITERIA";
 
     String EDIT_PHONE_KEY = "EDIT_PHONE_KEY";
     String EDIT_MAIL_KEY = "EDIT_MAIL_KEY";
@@ -26,4 +27,5 @@ public interface ConstantManager {
     int REQUEST_GALLERY_PICTURE = 88;
     int PERMISSION_REQUEST_SETTINGS_CODE = 101;
     int CAMERA_REQUEST_PERMISSION_CODE = 102;
+    int SEARCH_DELAY = 1500;
 }
