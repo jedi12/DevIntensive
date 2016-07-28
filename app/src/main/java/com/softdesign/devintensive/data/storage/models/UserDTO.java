@@ -17,9 +17,11 @@ public class UserDTO implements Parcelable {
     private String mCodeLines;
     private String mProjects;
     private String mBio;
+    private String mUserId;
+    private boolean mLiked;
     private List<String> mRepositories;
 
-    public UserDTO(User userData) {
+    public UserDTO(User userData, String myUserRemoteId) {
         List<String> repoLink = new ArrayList<>();
 
         mPhoto = userData.getPhoto();
@@ -28,12 +30,19 @@ public class UserDTO implements Parcelable {
         mCodeLines = String.valueOf(userData.getCodeLines());
         mProjects = String.valueOf(userData.getProjects());
         mBio = userData.getBio();
+        mUserId = userData.getRemoteId();
 
         for (Repository gitLink : userData.getRepositories()) {
             repoLink.add(gitLink.getRepositoryName());
         }
 
         mRepositories = repoLink;
+
+        for (LikeList likeList : userData.getLikesBy()) {
+            if (likeList.getUserLikeRemoteId().equals(myUserRemoteId)) {
+                mLiked = true;
+            }
+        }
     }
 
     protected UserDTO(Parcel in) {
@@ -43,6 +52,8 @@ public class UserDTO implements Parcelable {
         mCodeLines = in.readString();
         mProjects = in.readString();
         mBio = in.readString();
+        mUserId = in.readString();
+        mLiked = in.readByte() != 0x00;
         if (in.readByte() == 0x01) {
             mRepositories = new ArrayList<String>();
             in.readList(mRepositories, String.class.getClassLoader());
@@ -64,6 +75,8 @@ public class UserDTO implements Parcelable {
         dest.writeString(mCodeLines);
         dest.writeString(mProjects);
         dest.writeString(mBio);
+        dest.writeString(mUserId);
+        dest.writeByte((byte) (mLiked ? 0x01 : 0x00));
         if (mRepositories == null) {
             dest.writeByte((byte) (0x00));
         } else {
@@ -107,6 +120,14 @@ public class UserDTO implements Parcelable {
 
     public String getBio() {
         return mBio;
+    }
+
+    public String getUserId() {
+        return mUserId;
+    }
+
+    public boolean isLiked() {
+        return mLiked;
     }
 
     public List<String> getRepositories() {

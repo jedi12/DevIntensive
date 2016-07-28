@@ -1,6 +1,7 @@
 package com.softdesign.devintensive.data.network;
 
 import com.softdesign.devintensive.data.network.req.UserLoginReq;
+import com.softdesign.devintensive.data.network.res.UserLikeRes;
 import com.softdesign.devintensive.data.network.res.UserListRes;
 import com.softdesign.devintensive.data.network.res.UserModelRes;
 
@@ -26,4 +27,10 @@ public interface RestService {
 
     @GET("user/list?orderBy=rating")
     Call<UserListRes> getUserList();
+
+    @POST("user/{userId}/like")
+    Call<UserLikeRes> likeUser(@Path("userId") String userId);
+
+    @POST("user/{userId}/unlike")
+    Call<UserLikeRes> unlikeUser(@Path("userId") String userId);
 }

@@ -4,6 +4,8 @@ import android.content.Intent;
 import android.net.Uri;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.ActionBar;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
@@ -19,20 +21,35 @@ import android.widget.TextView;
 
 import com.softdesign.devintensive.R;
 import com.softdesign.devintensive.data.managers.DataManager;
+import com.softdesign.devintensive.data.network.res.UserLikeRes;
+import com.softdesign.devintensive.data.network.res.UserListRes;
+import com.softdesign.devintensive.data.storage.models.LikeList;
+import com.softdesign.devintensive.data.storage.models.LikeListDao;
 import com.softdesign.devintensive.data.storage.models.UserDTO;
+import com.softdesign.devintensive.data.storage.models.UserDao;
 import com.softdesign.devintensive.ui.adapters.RepositoriesAdapter;
 import com.softdesign.devintensive.utils.ConstantManager;
-import com.squareup.picasso.Callback;
-import com.squareup.picasso.NetworkPolicy;
-import com.squareup.picasso.Picasso;
+import com.softdesign.devintensive.utils.NetworkStatusChecker;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
+import retrofit2.Call;
+import retrofit2.Response;
 
 public class ProfileUserActivity extends BaseActivity {
     private static final String TAG = ConstantManager.TAG_PREFIX + "ProfileUserActivity";
+
+    private static final boolean LIKE = true;
+    private static final boolean UNLIKE = false;
+
+    private boolean mLiked;
+    private String mCurrentUserId;
+    private DataManager mDataManager;
+    private LikeListDao mLikeListDao;
 
     @BindView(R.id.toolbar) Toolbar mToolbar;
     @BindView(R.id.user_photo_img) ImageView mProfileImage;
@@ -43,12 +60,16 @@ public class ProfileUserActivity extends BaseActivity {
     @BindView(R.id.collapsing_toolbar) CollapsingToolbarLayout mCollapsingToolbar;
     @BindView(R.id.main_coordinator_container) CoordinatorLayout mCoordinatorLayout;
     @BindView(R.id.repositories_list) ListView mRepoListView;
+    @BindView(R.id.fab) FloatingActionButton mFab;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile_user);
         ButterKnife.bind(this);
+
+        mDataManager = DataManager.getInstance();
+        mLikeListDao = mDataManager.getDaoSession().getLikeListDao();
 
         setupToolBar();
         initProfileData();
@@ -83,6 +104,14 @@ public class ProfileUserActivity extends BaseActivity {
         mUserRating.setText(userDTO.getRating());
         mUserCodeLines.setText(userDTO.getCodeLines());
         mUserProjects.setText(userDTO.getProjects());
+        mCurrentUserId = userDTO.getUserId();
+
+        mLiked = userDTO.isLiked();
+        if (mLiked) {
+            mFab.setImageResource(R.drawable.ic_heart_broken_24);
+        } else {
+            mFab.setImageResource(R.drawable.ic_heart_24);
+        }
 
         mCollapsingToolbar.setTitle(userDTO.getFullName());
 
@@ -118,5 +147,74 @@ public class ProfileUserActivity extends BaseActivity {
         params.height = totalHeight + listView.getDividerHeight() * (listAdapter.getCount() - 1);
         listView.setLayoutParams(params);
         listView.requestLayout();
+    }
+
+    @OnClick(R.id.fab)
+    protected void fabOnClick() {
+
+        if (mLiked) {
+            likeUser(UNLIKE);
+            mFab.setImageResource(R.drawable.ic_heart_24);
+        } else {
+            likeUser(LIKE);
+            mFab.setImageResource(R.drawable.ic_heart_broken_24);
+        }
+
+        mLiked = !mLiked;
+    }
+
+    private void showSnackbar(String message) {
+        Snackbar.make(mCoordinatorLayout, message, Snackbar.LENGTH_LONG).show();
+    }
+
+    private void likeUser(boolean setLike) {
+
+        if (!NetworkStatusChecker.isNetworkAvailable(ProfileUserActivity.this)) {
+            showSnackbar("Сеть недоступна");
+            return;
+        }
+
+        Call<UserLikeRes> call;
+        if (setLike) {
+            call = mDataManager.likeUser(mCurrentUserId);
+        } else {
+            call = mDataManager.unlikeUser(mCurrentUserId);
+        }
+
+        call.enqueue(new retrofit2.Callback<UserLikeRes>() {
+            @Override
+            public void onResponse(Call<UserLikeRes> call, Response<UserLikeRes> response) {
+                try {
+                    if (response.code() == 200) {
+
+                        List<LikeList> allLikes = new ArrayList<>();
+                        for (String likedBy : response.body().getData().likesBy) {
+                            allLikes.add(new LikeList(likedBy, mCurrentUserId));
+                        }
+
+                        List<LikeList> currLikes = mLikeListDao._queryUser_LikesBy(mCurrentUserId);
+                        if (currLikes.size() != 0) {
+                            mLikeListDao.deleteInTx(currLikes);
+                        }
+
+                        mLikeListDao.insertOrReplaceInTx(allLikes);
+                        mDataManager.getDaoSession().clear();
+
+                    } else {
+                        Log.e(TAG, "Network error: " + response.message());
+                        showSnackbar("Неудалось лайкнуть пользователя");
+                    }
+                } catch (NullPointerException e){
+                    e.printStackTrace();
+                    showSnackbar("Что-то пошло не так");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<UserLikeRes> call, Throwable t) {
+                Log.e(TAG, "Network failure: " + t.getMessage());
+                showSnackbar("Неудалось лайкнуть пользователя");
+            }
+        });
     }
 }

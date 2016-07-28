@@ -18,12 +18,14 @@ import android.support.v7.widget.Toolbar;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.redmadrobot.chronos.ChronosConnector;
 import com.softdesign.devintensive.R;
 import com.softdesign.devintensive.data.managers.DataManager;
+import com.softdesign.devintensive.data.storage.models.LikeList;
 import com.softdesign.devintensive.data.storage.models.User;
 import com.softdesign.devintensive.data.storage.models.UserDTO;
 import com.softdesign.devintensive.data.storage.tasks.LoadUserListFromDbTask;
@@ -255,16 +257,35 @@ public class UserListActivity extends BaseActivity {
         mCurrTask = mChronosConnector.runOperation(new LoadUserListFromDbTask(query, LoadUserListFromDbTask.SORT_BY_NAME), false);
     }
 
+//    private void showUserByLike(List<LikeList> likeList) {
+//        if (mChronosConnector.isOperationRunning(mCurrTask)) {
+//            mChronosConnector.cancelOperation(mCurrTask, true);
+//        }
+//        mCurrTask = mChronosConnector.runOperation(new LoadUserListFromDbTask(null, LoadUserListFromDbTask.SORT_BY_USERS_LIKED_ME), false);
+//    }
+
     private void showUsers(List<User> users) {
         mUsers = users;
         mUsersAdapter = new UsersAdapter(mUsers, new UsersAdapter.UserViewHolder.CustomClickListener() {
             @Override
-            public void onUserItemClickListener(int position) {
-                UserDTO userDTO = new UserDTO(mUsers.get(position));
-                Intent profileIntent = new Intent(UserListActivity.this, ProfileUserActivity.class);
-                profileIntent.putExtra(ConstantManager.PARCELABLE_KEY, userDTO);
+            public void onUserItemClickListener(View view, int position) {
+                switch (view.getId()) {
+                    case R.id.more_info_btn:
+                        UserDTO userDTO = new UserDTO(mUsers.get(position), mDataManager.getPreferencesManager().getUserId());
+                        Intent profileIntent = new Intent(UserListActivity.this, ProfileUserActivity.class);
+                        profileIntent.putExtra(ConstantManager.PARCELABLE_KEY, userDTO);
 
-                startActivity(profileIntent);
+                        startActivity(profileIntent);
+                        break;
+
+                    case R.id.likes_txt:
+
+                    case R.id.likes_iv:
+                        mUsers = mDataManager.getUserListSortedByUsersLikedMe(mUsers.get(position).getLikesBy());
+                        showUsers(mUsers);
+
+                        break;
+                }
             }
         });
         mRecyclerView.swapAdapter(mUsersAdapter, false);

@@ -14,6 +14,7 @@ import java.util.List;
 public class LoadUserListFromDbTask extends ChronosOperation<List<User>> {
     public static final String NO_SORT = "NO_SORT";
     public static final String SORT_BY_NAME = "SORT_BY_NAME";
+    public static final String SORT_BY_USERS_LIKED_ME = "SORT_BY_USERS_LIKED_ME";
 
     private String mCriteria;
     private String mQuery;
@@ -22,8 +23,8 @@ public class LoadUserListFromDbTask extends ChronosOperation<List<User>> {
 //
 //    }
 
-    public LoadUserListFromDbTask(String userName, String criteria) {
-        mQuery = userName;
+    public LoadUserListFromDbTask(String query, String criteria) {
+        mQuery = query;
         mCriteria = criteria;
     }
 
@@ -43,6 +44,10 @@ public class LoadUserListFromDbTask extends ChronosOperation<List<User>> {
                 case SORT_BY_NAME:
                     result = DataManager.getInstance().getUserListSortedByNameFromDb(mQuery);
                     break;
+
+//                case SORT_BY_USERS_LIKED_ME:
+//                    result = DataManager.getInstance().getUserListSortedByUsersLikedMe();
+//                    break;
 
                 default:
                     result = new ArrayList<>();

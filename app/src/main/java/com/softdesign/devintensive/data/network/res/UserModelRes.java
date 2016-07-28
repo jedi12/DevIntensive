@@ -76,6 +76,9 @@ public class UserModelRes {
         @SerializedName("updated")
         @Expose
         private String updated;
+        @SerializedName("id")
+        @Expose
+        private String idXZ;
 
         public String getId() {
             return id;
@@ -208,12 +211,18 @@ public class UserModelRes {
         @SerializedName("linesCode")
         @Expose
         private int linesCode;
+        @SerializedName("likesBy")
+        @Expose
+        private List<String> likesBy = new ArrayList<String>();
         @SerializedName("rait")
         @Expose
         private int rait;
         @SerializedName("updated")
         @Expose
         private String updated;
+        @SerializedName("rating")
+        @Expose
+        private int rating;
 
         public int getProjects() {
             return projects;
@@ -237,6 +246,10 @@ public class UserModelRes {
 
         public String getUpdated() {
             return updated;
+        }
+
+        public List<String> getLikesBy() {
+            return likesBy;
         }
     }
 

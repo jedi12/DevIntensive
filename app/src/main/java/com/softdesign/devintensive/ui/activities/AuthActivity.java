@@ -17,6 +17,8 @@ import com.softdesign.devintensive.data.managers.DataManager;
 import com.softdesign.devintensive.data.network.req.UserLoginReq;
 import com.softdesign.devintensive.data.network.res.UserListRes;
 import com.softdesign.devintensive.data.network.res.UserModelRes;
+import com.softdesign.devintensive.data.storage.models.LikeList;
+import com.softdesign.devintensive.data.storage.models.LikeListDao;
 import com.softdesign.devintensive.data.storage.models.Repository;
 import com.softdesign.devintensive.data.storage.models.RepositoryDao;
 import com.softdesign.devintensive.data.storage.models.User;
@@ -55,6 +57,7 @@ public class AuthActivity extends BaseActivity {
 
     private DataManager mDataManager;
     private RepositoryDao mRepositoryDao;
+    private LikeListDao mLikeListDao;
     private UserDao mUserDao;
 
     @BindView(R.id.auth_login) EditText mAuthLogin;
@@ -73,6 +76,7 @@ public class AuthActivity extends BaseActivity {
         mDataManager = DataManager.getInstance();
         mUserDao = mDataManager.getDaoSession().getUserDao();
         mRepositoryDao = mDataManager.getDaoSession().getRepositoryDao();
+        mLikeListDao = mDataManager.getDaoSession().getLikeListDao();
 
         showSplash();
         loadUserListFromServerAndSaveInDbOnBackground();
@@ -251,14 +255,20 @@ public class AuthActivity extends BaseActivity {
                     if (response.code() == 200) {
 
                         List<Repository> allRepositories = new ArrayList<>();
+                        List<LikeList> allLikes = new ArrayList<>();
                         List<User> allUsers = new ArrayList<>();
 
                         for (UserListRes.UserData userRes : response.body().getData()) {
                             allRepositories.addAll(getRepoListFromUserRes(userRes));
+                            allLikes.addAll(getLikeListFromUserRes(userRes));
                             allUsers.add(new User(userRes));
                         }
 
+                        mRepositoryDao.deleteAll();
                         mRepositoryDao.insertOrReplaceInTx(allRepositories);
+                        mLikeListDao.deleteAll();
+                        mLikeListDao.insertOrReplaceInTx(allLikes);
+                        mUserDao.deleteAll();
                         mUserDao.insertOrReplaceInTx(allUsers);
 
                         EventBus.getDefault().post(new MessageEvent(USERLIST_LOADED_AND_SAVED));
@@ -293,5 +303,16 @@ public class AuthActivity extends BaseActivity {
         }
 
         return repositories;
+    }
+
+    private List<LikeList> getLikeListFromUserRes(UserListRes.UserData userData) {
+        final String userId = userData.getId();
+
+        List<LikeList> likeList = new ArrayList<>();
+        for (String likes : userData.getProfileValues().getLikesBy()) {
+            likeList.add(new LikeList(likes, userId));
+        }
+
+        return likeList;
     }
 }

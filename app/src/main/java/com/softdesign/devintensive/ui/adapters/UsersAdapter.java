@@ -8,6 +8,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.softdesign.devintensive.R;
@@ -62,6 +63,7 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UserViewHold
         holder.mRating.setText(String.valueOf(user.getRating()));
         holder.mCodeLines.setText(String.valueOf(user.getCodeLines()));
         holder.mProjects.setText(String.valueOf(user.getProjects()));
+        holder.mLikes.setText(String.valueOf(user.getLikesBy().size()));
 
         if (user.getBio() == null || user.getBio().isEmpty()) {
             holder.mBio.setVisibility(View.GONE);
@@ -79,7 +81,8 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UserViewHold
     public static class UserViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
         protected AspectRatioImageView userPhoto;
-        protected TextView mFullName, mRating, mCodeLines, mProjects, mBio;
+        protected TextView mFullName, mRating, mCodeLines, mProjects, mBio, mLikes;
+        private ImageView mLikesSrc;
         private Button mShowMore;
         protected Drawable mDummy;
 
@@ -97,19 +100,25 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UserViewHold
             mBio = (TextView) itemView.findViewById(R.id.bio_txt);
             mShowMore = (Button) itemView.findViewById(R.id.more_info_btn);
 
+            mLikes = (TextView) itemView.findViewById(R.id.likes_txt);
+            mLikes.setOnClickListener(this);
+
+            mLikesSrc = (ImageView) itemView.findViewById(R.id.likes_iv);
+            mLikesSrc.setOnClickListener(this);
+
             mDummy = userPhoto.getContext().getResources().getDrawable(R.drawable.user_bg);
             mShowMore.setOnClickListener(this);
         }
 
         @Override
-        public void onClick(View v) {
+        public void onClick(View view) {
             if (mListener != null) {
-                mListener.onUserItemClickListener(getAdapterPosition());
+                mListener.onUserItemClickListener(view, getAdapterPosition());
             }
         }
 
         public interface CustomClickListener {
-            void onUserItemClickListener(int adapterPosition);
+            void onUserItemClickListener(View view, int adapterPosition);
         }
     }
 }

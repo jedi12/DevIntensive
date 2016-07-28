@@ -1,40 +1,33 @@
 package com.softdesign.devintensive.data.storage.models;
 
-import com.softdesign.devintensive.data.network.res.UserModelRes;
-
 import org.greenrobot.greendao.annotation.Entity;
 import org.greenrobot.greendao.annotation.Id;
 import org.greenrobot.greendao.annotation.NotNull;
-import org.greenrobot.greendao.annotation.Unique;
 import org.greenrobot.greendao.annotation.Generated;
 import org.greenrobot.greendao.DaoException;
 
-@Entity(active = true, nameInDb = "REPOSITORIES")
-public class Repository {
+@Entity(active = true, nameInDb = "LIKES")
+public class LikeList {
 
     @Id
     private Long id;
 
     @NotNull
-    @Unique
-    private String remoteId;
-
-    private String repositoryName;
-
     private String userRemoteId;
 
+    private String userLikeRemoteId;
+
     /** Used for active entity operations. */
-    @Generated(hash = 332345895)
-    private transient RepositoryDao myDao;
+    @Generated(hash = 698341182)
+    private transient LikeListDao myDao;
 
     /** Used to resolve relations */
     @Generated(hash = 2040040024)
     private transient DaoSession daoSession;
 
-    public Repository(UserModelRes.Repo repositoryRes, String userId) {
-        repositoryName = repositoryRes.getGit();
+    public LikeList(String likedBy, String userId) {
+        userLikeRemoteId = likedBy;
         userRemoteId = userId;
-        remoteId = repositoryRes.getId();
     }
 
     /**
@@ -74,10 +67,18 @@ public class Repository {
     }
 
     /** called by internal mechanisms, do not call yourself. */
-    @Generated(hash = 636002579)
+    @Generated(hash = 811191376)
     public void __setDaoSession(DaoSession daoSession) {
         this.daoSession = daoSession;
-        myDao = daoSession != null ? daoSession.getRepositoryDao() : null;
+        myDao = daoSession != null ? daoSession.getLikeListDao() : null;
+    }
+
+    public String getUserLikeRemoteId() {
+        return this.userLikeRemoteId;
+    }
+
+    public void setUserLikeRemoteId(String userLikeRemoteId) {
+        this.userLikeRemoteId = userLikeRemoteId;
     }
 
     public String getUserRemoteId() {
@@ -88,22 +89,6 @@ public class Repository {
         this.userRemoteId = userRemoteId;
     }
 
-    public String getRepositoryName() {
-        return this.repositoryName;
-    }
-
-    public void setRepositoryName(String repositoryName) {
-        this.repositoryName = repositoryName;
-    }
-
-    public String getRemoteId() {
-        return this.remoteId;
-    }
-
-    public void setRemoteId(String remoteId) {
-        this.remoteId = remoteId;
-    }
-
     public Long getId() {
         return this.id;
     }
@@ -112,16 +97,14 @@ public class Repository {
         this.id = id;
     }
 
-    @Generated(hash = 1976272162)
-    public Repository(Long id, @NotNull String remoteId, String repositoryName,
-            String userRemoteId) {
+    @Generated(hash = 402497153)
+    public LikeList(Long id, @NotNull String userRemoteId, String userLikeRemoteId) {
         this.id = id;
-        this.remoteId = remoteId;
-        this.repositoryName = repositoryName;
         this.userRemoteId = userRemoteId;
+        this.userLikeRemoteId = userLikeRemoteId;
     }
 
-    @Generated(hash = 984204935)
-    public Repository() {
+    @Generated(hash = 1622007685)
+    public LikeList() {
     }
 }

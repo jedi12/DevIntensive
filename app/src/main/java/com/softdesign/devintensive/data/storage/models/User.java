@@ -41,10 +41,19 @@ public class User {
 
     private String bio;
 
-    @ToMany(joinProperties = {
-            @JoinProperty(name = "remoteId", referencedName = "userRemoteId")
-    })
+    @ToMany(joinProperties = {@JoinProperty(name = "remoteId", referencedName = "userRemoteId")})
     private List<Repository> repositories;
+
+    @ToMany(joinProperties = {@JoinProperty(name = "remoteId", referencedName = "userRemoteId")})
+    private List<LikeList> likesBy;
+
+    /** Used for active entity operations. */
+    @Generated(hash = 1507654846)
+    private transient UserDao myDao;
+
+    /** Used to resolve relations */
+    @Generated(hash = 2040040024)
+    private transient DaoSession daoSession;
 
     public User(UserListRes.UserData userRes) {
 
@@ -95,6 +104,34 @@ public class User {
     }
 
     /** Resets a to-many relationship, making the next get call to query for a fresh result. */
+    @Generated(hash = 1778225727)
+    public synchronized void resetLikesBy() {
+        likesBy = null;
+    }
+
+    /**
+     * To-many relationship, resolved on first access (and after reset).
+     * Changes to to-many relations are not persisted, make changes to the target entity.
+     */
+    @Generated(hash = 942563429)
+    public List<LikeList> getLikesBy() {
+        if (likesBy == null) {
+            final DaoSession daoSession = this.daoSession;
+            if (daoSession == null) {
+                throw new DaoException("Entity is detached from DAO context");
+            }
+            LikeListDao targetDao = daoSession.getLikeListDao();
+            List<LikeList> likesByNew = targetDao._queryUser_LikesBy(remoteId);
+            synchronized (this) {
+                if(likesBy == null) {
+                    likesBy = likesByNew;
+                }
+            }
+        }
+        return likesBy;
+    }
+
+    /** Resets a to-many relationship, making the next get call to query for a fresh result. */
     @Generated(hash = 438307964)
     public synchronized void resetRepositories() {
         repositories = null;
@@ -128,14 +165,6 @@ public class User {
         this.daoSession = daoSession;
         myDao = daoSession != null ? daoSession.getUserDao() : null;
     }
-
-    /** Used for active entity operations. */
-    @Generated(hash = 1507654846)
-    private transient UserDao myDao;
-
-    /** Used to resolve relations */
-    @Generated(hash = 2040040024)
-    private transient DaoSession daoSession;
 
     public String getBio() {
         return this.bio;
@@ -210,9 +239,8 @@ public class User {
     }
 
     @Generated(hash = 1023608416)
-    public User(Long id, @NotNull String remoteId, String photo,
-            @NotNull String fullName, @NotNull String searchName, int rating,
-            int codeLines, int projects, String bio) {
+    public User(Long id, @NotNull String remoteId, String photo, @NotNull String fullName,
+            @NotNull String searchName, int rating, int codeLines, int projects, String bio) {
         this.id = id;
         this.remoteId = remoteId;
         this.photo = photo;

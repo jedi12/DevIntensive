@@ -6,9 +6,11 @@ import com.softdesign.devintensive.data.network.PicassoCache;
 import com.softdesign.devintensive.data.network.RestService;
 import com.softdesign.devintensive.data.network.ServiceGenerator;
 import com.softdesign.devintensive.data.network.req.UserLoginReq;
+import com.softdesign.devintensive.data.network.res.UserLikeRes;
 import com.softdesign.devintensive.data.network.res.UserListRes;
 import com.softdesign.devintensive.data.network.res.UserModelRes;
 import com.softdesign.devintensive.data.storage.models.DaoSession;
+import com.softdesign.devintensive.data.storage.models.LikeList;
 import com.softdesign.devintensive.data.storage.models.User;
 import com.softdesign.devintensive.data.storage.models.UserDao;
 import com.softdesign.devintensive.data.storage.models.UserOrder;
@@ -78,6 +80,14 @@ public class DataManager {
 
     public Call<UserListRes> getUserListFromNetwork() {
         return mRestService.getUserList();
+    }
+
+    public Call<UserLikeRes> likeUser(String userId) {
+        return mRestService.likeUser(userId);
+    }
+
+    public Call<UserLikeRes> unlikeUser(String userId) {
+        return mRestService.unlikeUser(userId);
     }
 
     // endregion
@@ -150,6 +160,27 @@ public class DataManager {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public List<User> getUserListSortedByUsersLikedMe(List<LikeList> likeList) {
+        List<User> userList = new ArrayList<>();
+
+        List<String> userLikeRemouteIdList = new ArrayList<>();
+        for (LikeList likes : likeList) {
+            userLikeRemouteIdList.add(likes.getUserLikeRemoteId());
+        }
+
+        try {
+            userList = mDaoSession.queryBuilder(User.class)
+                    .where(UserDao.Properties.RemoteId.in(userLikeRemouteIdList))
+                    .orderDesc(UserDao.Properties.Rating)
+                    .build()
+                    .list();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return userList;
     }
 
     // endregion

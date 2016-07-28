@@ -115,4 +115,13 @@
 
     <include layout="@layout/static_profile_content"/>
 
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="@dimen/fab_right_space"
+        android:src="@drawable/ic_heart_24"
+        app:layout_anchor="@id/appbar_layout"
+        app:layout_anchorGravity="bottom|right"/>
+
 </android.support.design.widget.CoordinatorLayout>
